@@ -39,10 +39,10 @@ export class Pasien extends BaseEntity {
   @Column({ type: 'varbinary' })
   password: string
 
-  @Column({ nullable: true, type: 'decimal', precision: 3, scale: 2 })
+  @Column({ nullable: true, type: 'decimal', precision: 5, scale: 2 })
   beratBadan: number
 
-  @Column({ nullable: true, type: 'decimal', precision: 3, scale: 2 })
+  @Column({ nullable: true, type: 'decimal', precision: 5, scale: 2 })
   tinggiBadan: number
 
   @Column({ nullable: true, length: 2 })
