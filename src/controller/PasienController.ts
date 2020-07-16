@@ -8,6 +8,7 @@ import { Pasien } from '../entity/Pasien'
 import validationDescriber from '../util/validationDescriber'
 import upcaseWordsFirstLetter from '../util/upcaseWordsFirstLetter'
 import phoneNumberFormat from '../util/phoneNumberFormat'
+import { RiwayatKesehatan } from '../entity/RiwayatKesehatan'
 
 export const create = async (req: Request, res: Response) => {
   const pasienRepo = getRepository(Pasien)
@@ -24,7 +25,10 @@ export const create = async (req: Request, res: Response) => {
     tinggiBadan,
     goldar,
     tempatLahir,
+    riwayatKesehatan,
   } = req.body
+
+  const isChecking = req.query.hasOwnProperty('check')
 
   const pasien = new Pasien()
 
@@ -33,6 +37,14 @@ export const create = async (req: Request, res: Response) => {
   const existProperties = []
 
   try {
+    if (riwayatKesehatan && riwayatKesehatan.length > 0) {
+      riwayatKesehatan.forEach((rk) => {
+        const tanggal = new Date(rk.tanggal)
+        if (isNaN(tanggal.getTime())) throw new Error('tanggal riwayat kesehatan tidak valid')
+        if (!rk.namaPenyakit) throw new Error('nama penyakit riwayat kesehatan harus diisi')
+      })
+    }
+
     if (!password || password.length < 8)
       throw new Error('Password harus lebih atau sama dengan 8 karakter')
 
@@ -45,10 +57,10 @@ export const create = async (req: Request, res: Response) => {
     pasien.email = email
     pasien.username = username
     pasien.password = await bcrypt.hash(password, salt)
-    pasien.beratBadan = beratBadan
-    pasien.tinggiBadan = tinggiBadan
-    pasien.goldar = goldar.toUpperCase()
-    pasien.tempatLahir = tempatLahir
+    if (beratBadan) pasien.beratBadan = beratBadan
+    if (tinggiBadan) pasien.tinggiBadan = tinggiBadan
+    if (goldar) pasien.goldar = goldar.toUpperCase()
+    if (tempatLahir) pasien.tempatLahir = tempatLahir
 
     // Select user with noTelp OR email OR username from request body
     const pasienIsExist = await pasienRepo.find({
@@ -81,9 +93,25 @@ export const create = async (req: Request, res: Response) => {
     const errors = await validate(pasien)
     if (errors.length > 0) throw new Error('Data registrasi tidak valid')
 
-    await pasienRepo.save(pasien)
+    if (!isChecking) {
+      const savedPasien = await pasienRepo.save(pasien)
 
-    res.status(201).json({ success: true, message: 'Berhasil membuat akun', pasien })
+      if (riwayatKesehatan && riwayatKesehatan.length > 0)
+        riwayatKesehatan.forEach(async (rk) => {
+          const riwayat = new RiwayatKesehatan()
+
+          riwayat.pasienId = savedPasien.id
+          riwayat.tanggal = new Date(rk.tanggal)
+          riwayat.namaPenyakit = rk.namaPenyakit
+
+          await riwayat.save()
+        })
+    }
+
+    res.status(!isChecking ? 201 : 200).json({
+      success: true,
+      message: !isChecking ? 'Berhasil membuat akun' : undefined,
+    })
   } catch (err) {
     const constraints = validationDescriber(await validate(pasien))
     res.status(400).json({
@@ -133,6 +161,7 @@ export const updateProfile = async (req: Request, res: Response) => {
     tinggiBadan,
     goldar,
     tempatLahir,
+    riwayatKesehatan,
   } = req.body
 
   // If noTelp OR email OR username already exist
@@ -144,6 +173,14 @@ export const updateProfile = async (req: Request, res: Response) => {
   try {
     if (!pasien) throw new Error('User tidak ditemukan')
     if (req.user.id !== id) throw new Error('Akses tidak valid')
+
+    if (riwayatKesehatan && riwayatKesehatan.length > 0) {
+      riwayatKesehatan.forEach((rk) => {
+        const tanggal = new Date(rk.tanggal)
+        if (isNaN(tanggal.getTime())) throw new Error('tanggal riwayat kesehatan tidak valid')
+        if (!rk.namaPenyakit) throw new Error('nama penyakit riwayat kesehatan harus diisi')
+      })
+    }
 
     const salt = await bcrypt.genSalt(10)
 
@@ -193,12 +230,22 @@ export const updateProfile = async (req: Request, res: Response) => {
 
     await pasienRepo.save(pasien)
 
+    if (riwayatKesehatan && riwayatKesehatan.length > 0)
+      riwayatKesehatan.forEach(async (rk) => {
+        const riwayat = new RiwayatKesehatan()
+
+        riwayat.pasienId = id
+        riwayat.tanggal = new Date(rk.tanggal)
+        riwayat.namaPenyakit = rk.namaPenyakit
+
+        await riwayat.save()
+      })
+
     res.json({
       success: true,
       message: 'Berhasil memperbarui profil',
     })
   } catch (err) {
-    console.error(err)
     const constraints = validationDescriber(await validate(pasien))
     res.status(400).json({
       success: false,

@@ -60,7 +60,6 @@ export const checkToken = (req: Request, res: Response) => {
     success: true,
     message: 'Token valid',
     user: req.user,
-    expired: new Date(req.tokenExp),
-    remaining: timeConversion(req.tokenExp - req.tokenIat),
+    remaining: timeConversion(req.tokenExp - Date.now()),
   })
 }
