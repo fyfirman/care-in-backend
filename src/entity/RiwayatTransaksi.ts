@@ -6,6 +6,7 @@ import {
   OneToOne,
   JoinColumn,
   ManyToOne,
+  AfterLoad,
 } from 'typeorm'
 import { Transaksi } from './Transaksi'
 import { Pasien } from './Pasien'
@@ -61,4 +62,10 @@ export class RiwayatTransaksi extends BaseEntity {
 
   @Column()
   catatan: string
+
+  @AfterLoad() _convertNumerics() {
+    this.biayaJasa = parseFloat(this.biayaJasa as any)
+    this.biayaTranspor = parseFloat(this.biayaTranspor as any)
+    this.biayaAdmin = parseFloat(this.biayaAdmin as any)
+  }
 }

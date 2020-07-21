@@ -1,4 +1,4 @@
-import { Entity, BaseEntity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm'
+import { Entity, BaseEntity, PrimaryGeneratedColumn, Column, OneToMany, AfterLoad } from 'typeorm'
 import { IsNotEmpty, IsDate, Length, IsEmail, IsNumberString } from 'class-validator'
 import { RiwayatKesehatan } from './RiwayatKesehatan'
 import { Transaksi } from './Transaksi'
@@ -53,6 +53,11 @@ export class Pasien extends BaseEntity {
 
   @Column({ nullable: true })
   foto: string
+
+  @AfterLoad() _convertNumerics() {
+    this.beratBadan = parseFloat(this.beratBadan as any)
+    this.tinggiBadan = parseFloat(this.tinggiBadan as any)
+  }
 
   @OneToMany(() => RiwayatKesehatan, (riwayatKesehatan) => riwayatKesehatan.pasien)
   riwayatKesehatan: RiwayatKesehatan[]

@@ -1,4 +1,4 @@
-import { Entity, BaseEntity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm'
+import { Entity, BaseEntity, PrimaryGeneratedColumn, Column, OneToMany, AfterLoad } from 'typeorm'
 import { IsPositive, IsNotEmpty, IsEmail, IsNumberString } from 'class-validator'
 import { Transaksi } from './Transaksi'
 import { Chat } from './Chat'
@@ -43,6 +43,10 @@ export class Nakes extends BaseEntity {
 
   @Column({ nullable: false })
   foto: string
+
+  @AfterLoad() _convertNumerics() {
+    this.harga = parseFloat(this.harga as any)
+  }
 
   @OneToMany(() => Transaksi, (transaksi) => transaksi.nakes)
   transaksi: Transaksi[]
