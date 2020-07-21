@@ -1,28 +1,33 @@
 import { Request, Response } from 'express'
 import { getRepository } from 'typeorm'
 import { Pasien } from '../entity/Pasien'
+import { Nakes } from '../entity/Nakes'
 import { compare } from 'bcryptjs'
 import { sign } from 'jsonwebtoken'
 
 export const generateToken = async (req: Request, res: Response) => {
   const pasienRepo = getRepository(Pasien)
+  const nakesRepo = getRepository(Nakes)
 
-  const { remember } = req.query
+  const { login, remember } = req.query
   const { username, password } = req.body
 
   try {
     if (!username || !password) throw new Error('Data tidak lengkap')
 
-    const pasien = await pasienRepo.findOne({ where: { username } })
-    if (!pasien) throw new Error('Username atau password salah')
+    let user = undefined
+    if (login === 'nakes') user = await nakesRepo.findOne({ where: { username } })
+    else user = await pasienRepo.findOne({ where: { username } })
 
-    const isMatch = await compare(password, pasien.password.toString())
+    if (!user) throw new Error('Username atau password salah')
+
+    const isMatch = await compare(password, user.password.toString())
     if (!isMatch) throw new Error('Username atau password salah')
 
     const payload = {
       user: {
-        id: pasien.id,
-        username: pasien.username,
+        id: user.id,
+        username: user.username,
       },
     }
 
