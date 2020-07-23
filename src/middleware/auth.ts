@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express'
 import { verify } from 'jsonwebtoken'
+import responseLogger from '../util/responseLogger'
 
 export const auth = (req: Request, res: Response, next: NextFunction) => {
   const tokenHeader = req.header('Authorization')
@@ -16,6 +17,7 @@ export const auth = (req: Request, res: Response, next: NextFunction) => {
     req.tokenExp = new Date(0).setUTCSeconds((<any>decoded).exp)
     next()
   } catch (err) {
+    responseLogger(req.method, 401, req.baseUrl + req.path, 'Token tidak valid')
     return res.status(401).json({
       success: false,
       message: 'Token tidak valid atau masa berlaku sudah habis',

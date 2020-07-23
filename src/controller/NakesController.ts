@@ -7,6 +7,7 @@ import { Nakes } from '../entity/Nakes'
 
 import validationDescriber from '../util/validationDescriber'
 import phoneNumberFormat from '../util/phoneNumberFormat'
+import responseLogger from '../util/responseLogger'
 
 export const createNakes = async (req: Request, res: Response) => {
   const nakesRepo = getRepository(Nakes)
@@ -71,12 +72,16 @@ export const createNakes = async (req: Request, res: Response) => {
 
     if (!isChecking) await nakesRepo.save(nakes)
 
-    res.status(!isChecking ? 201 : 200).json({
+    let statusCode = !isChecking ? 201 : 200
+
+    responseLogger(req.method, statusCode, req.baseUrl + req.path)
+    res.status(statusCode).json({
       success: true,
       message: !isChecking ? 'Berhasil membuat akun' : undefined,
     })
   } catch (err) {
     const constraints = validationDescriber(await validate(nakes))
+    responseLogger(req.method, 400, req.baseUrl + req.path, err.message)
     res.status(400).json({
       success: false,
       message: err.message,
@@ -96,6 +101,7 @@ export const getOneNakes = async (req: Request, res: Response) => {
 
     if (!nakes) throw new Error('Nakes tidak ditemukan')
 
+    responseLogger(req.method, 200, req.baseUrl + req.path)
     res.json({
       succes: true,
       message: 'Berhasil mengambil data nakes',
@@ -104,6 +110,8 @@ export const getOneNakes = async (req: Request, res: Response) => {
   } catch (err) {
     let statusCode = 500
     if (err.message === 'Nakes tidak ditemukan') statusCode = 404
+
+    responseLogger(req.method, statusCode, req.baseUrl + req.path, err.message)
     res.status(statusCode).json({ success: false, message: err.message })
   }
 }
@@ -127,6 +135,7 @@ export const getManyNakes = async (req: Request, res: Response) => {
       order: sortBy,
     })
 
+    responseLogger(req.method, 200, req.baseUrl + req.path)
     res.json({
       success: true,
       message: 'Berhasil mengambil daftar nakes',
@@ -136,6 +145,7 @@ export const getManyNakes = async (req: Request, res: Response) => {
       nakes,
     })
   } catch (err) {
+    responseLogger(req.method, 500, req.baseUrl + req.path, err.message)
     res.status(500).json({ success: false, message: err.message })
   }
 }
@@ -201,6 +211,7 @@ export const updateNakesProfile = async (req: Request, res: Response) => {
 
     await nakesRepo.save(nakes)
 
+    responseLogger(req.method, 200, req.baseUrl + req.path)
     res.json({
       success: true,
       message: 'Berhasil memperbarui profil',
@@ -214,6 +225,7 @@ export const updateNakesProfile = async (req: Request, res: Response) => {
     if (err.message === 'Akses tidak valid') statusCode = 403
     if (err.message === 'Nakes tidak ditemukan') statusCode = 404
 
+    responseLogger(req.method, statusCode, req.baseUrl + req.path, err.message)
     res.status(statusCode).json({
       success: false,
       message: err.message,
@@ -240,6 +252,7 @@ export const updateNakesFoto = async (req: Request, res: Response) => {
 
     await nakesRepo.save(nakes)
 
+    responseLogger(req.method, 200, req.baseUrl + req.path)
     res.json({
       success: true,
       message: 'Berhasil upload foto profil',
@@ -249,6 +262,8 @@ export const updateNakesFoto = async (req: Request, res: Response) => {
     if (err.message === 'Akses tidak valid') statusCode = 403
     if (err.message === 'Tidak ada file') statusCode = 404
     if (err.message === 'Nakes tidak ditemukan') statusCode = 404
+
+    responseLogger(req.method, statusCode, req.baseUrl + req.path, err.message)
     res.status(statusCode).json({
       success: false,
       message: err.message,
@@ -269,11 +284,14 @@ export const deleteOneNakes = async (req: Request, res: Response) => {
 
     await nakesRepo.delete(nakes)
 
+    responseLogger(req.method, 202, req.baseUrl + req.path)
     res.status(202).json({ success: true, message: 'Berhasil menghapus nakes' })
   } catch (err) {
     let statusCode = 500
     if (err.message === 'Nakes tidak ditemukan') statusCode = 404
     if (err.message === 'Akses tidak valid') statusCode = 403
+
+    responseLogger(req.method, statusCode, req.baseUrl + req.path, err.message)
     res.status(statusCode).json({ success: false, message: err.message })
   }
 }

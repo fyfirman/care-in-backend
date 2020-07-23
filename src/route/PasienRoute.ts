@@ -1,8 +1,14 @@
 import { Router } from 'express'
 
-import { create, getOne, updateProfile, updateFoto } from '../controller/PasienController'
+import {
+  createPasien,
+  getOnePasien,
+  updatePasienProfile,
+  updatePasienFoto,
+} from '../controller/PasienController'
 import { auth } from '../middleware/auth'
 import { uploadFoto } from '../middleware/upload'
+import { deleteOnePasien } from '../controller/PasienController'
 
 const router = Router()
 
@@ -12,7 +18,7 @@ const router = Router()
  * @access Public
  * @desc Register new user
  */
-router.post('/', create)
+router.post('/', createPasien)
 
 /**
  * @method GET
@@ -20,7 +26,7 @@ router.post('/', create)
  * @access Private (self)
  * @desc View user profile data
  */
-router.get('/:id', auth, getOne)
+router.get('/:id', auth, getOnePasien)
 
 /**
  * @method PUT
@@ -28,7 +34,7 @@ router.get('/:id', auth, getOne)
  * @access Private (self)
  * @desc Update user profile
  */
-router.put('/:id', auth, updateProfile)
+router.put('/:id', auth, updatePasienProfile)
 
 /**
  * @method PUT
@@ -36,6 +42,14 @@ router.put('/:id', auth, updateProfile)
  * @access Private (self)
  * @desc Upload and update user avatar
  */
-router.put('/:id/foto', auth, uploadFoto, updateFoto)
+router.put('/:id/foto', auth, uploadFoto, updatePasienFoto)
+
+/**
+ * @method DELETE
+ * @route /api/v1/pasien/:id
+ * @access Private (self)
+ * @desc Delete pasien
+ */
+router.delete('/:id', auth, deleteOnePasien)
 
 export default router

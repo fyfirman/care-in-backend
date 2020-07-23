@@ -9,8 +9,9 @@ import validationDescriber from '../util/validationDescriber'
 import upcaseWordsFirstLetter from '../util/upcaseWordsFirstLetter'
 import phoneNumberFormat from '../util/phoneNumberFormat'
 import { RiwayatKesehatan } from '../entity/RiwayatKesehatan'
+import responseLogger from '../util/responseLogger'
 
-export const create = async (req: Request, res: Response) => {
+export const createPasien = async (req: Request, res: Response) => {
   const pasienRepo = getRepository(Pasien)
 
   const {
@@ -108,12 +109,14 @@ export const create = async (req: Request, res: Response) => {
         })
     }
 
+    responseLogger(req.method, !isChecking ? 201 : 200, req.baseUrl + req.path)
     res.status(!isChecking ? 201 : 200).json({
       success: true,
       message: !isChecking ? 'Berhasil membuat akun' : undefined,
     })
   } catch (err) {
     const constraints = validationDescriber(await validate(pasien))
+    responseLogger(req.method, 400, req.baseUrl + req.path, err.message)
     res.status(400).json({
       success: false,
       message: err.message,
@@ -122,7 +125,7 @@ export const create = async (req: Request, res: Response) => {
   }
 }
 
-export const getOne = async (req: Request, res: Response) => {
+export const getOnePasien = async (req: Request, res: Response) => {
   const pasienRepo = getRepository(Pasien)
 
   const id = req.params.id
@@ -134,17 +137,23 @@ export const getOne = async (req: Request, res: Response) => {
     if (!pasien) throw new Error('User tidak ditemukan')
     if (req.user.id !== id) throw new Error('Akses tidak valid')
 
+    responseLogger(req.method, 200, req.baseUrl + req.path)
     res.json({
       succes: true,
       message: 'Berhasil mengambil data profil',
       pasien,
     })
   } catch (err) {
+    let statusCode = 500
+    if (err.message === 'Akses tidak valid') statusCode = 403
+    if (err.message === 'User tidak ditemukan') statusCode = 404
+
+    responseLogger(req.method, statusCode, req.baseUrl + req.path, err.message)
     res.status(400).json({ success: false, message: err.message })
   }
 }
 
-export const updateProfile = async (req: Request, res: Response) => {
+export const updatePasienProfile = async (req: Request, res: Response) => {
   const pasienRepo = getRepository(Pasien)
 
   const id = req.params.id
@@ -241,12 +250,14 @@ export const updateProfile = async (req: Request, res: Response) => {
         await riwayat.save()
       })
 
+    responseLogger(req.method, 200, req.baseUrl + req.path)
     res.json({
       success: true,
       message: 'Berhasil memperbarui profil',
     })
   } catch (err) {
     const constraints = validationDescriber(await validate(pasien))
+    responseLogger(req.method, 400, req.baseUrl + req.path, err.message)
     res.status(400).json({
       success: false,
       message: err.message,
@@ -255,7 +266,7 @@ export const updateProfile = async (req: Request, res: Response) => {
   }
 }
 
-export const updateFoto = async (req: Request, res: Response) => {
+export const updatePasienFoto = async (req: Request, res: Response) => {
   const pasienRepo = getRepository(Pasien)
 
   const id = req.params.id
@@ -273,14 +284,46 @@ export const updateFoto = async (req: Request, res: Response) => {
 
     await pasienRepo.save(pasien)
 
+    responseLogger(req.method, 200, req.baseUrl + req.path)
     res.json({
       success: true,
       message: 'Berhasil upload foto profil',
     })
   } catch (err) {
-    res.status(400).json({
+    let statusCode = 500
+    if (err.message === 'Akses tidak valid') statusCode = 403
+    if (err.message === 'User tidak ditemukan') statusCode = 404
+    if (err.message === 'Tidak ada file') statusCode = 404
+
+    responseLogger(req.method, statusCode, req.baseUrl + req.path, err.message)
+    res.status(statusCode).json({
       success: false,
       message: err.message,
     })
+  }
+}
+
+export const deleteOnePasien = async (req: Request, res: Response) => {
+  const pasienRepo = getRepository(Pasien)
+
+  const id = req.params.id
+
+  try {
+    const pasien = await pasienRepo.findOne(id)
+
+    if (!pasien) throw new Error('Pasien tidak ditemukan')
+    if (id !== req.user.id) throw new Error('Akses tidak valid')
+
+    await pasienRepo.delete(pasien)
+
+    responseLogger(req.method, 202, req.baseUrl + req.path)
+    res.status(202).json({ success: true, message: 'Berhasil menghapus pasien' })
+  } catch (err) {
+    let statusCode = 500
+    if (err.message === 'Pasien tidak ditemukan') statusCode = 404
+    if (err.message === 'Akses tidak valid') statusCode = 403
+
+    responseLogger(req.method, statusCode, req.baseUrl + req.path, err.message)
+    res.status(statusCode).json({ success: false, message: err.message })
   }
 }

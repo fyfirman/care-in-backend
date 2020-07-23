@@ -1,6 +1,11 @@
 import { Router } from 'express'
 
-import { create, getAll, updateOne, deleteOne } from '../controller/RiwayatKesehatanController'
+import {
+  createRiwayatKesehatan,
+  getManyRiwayatKesehatan,
+  updateOneRiwayatKesehatan,
+  deleteOneRiwayatKesehatan,
+} from '../controller/RiwayatKesehatanController'
 import { auth } from '../middleware/auth'
 
 const router = Router()
@@ -11,7 +16,7 @@ const router = Router()
  * @access Private (self)
  * @desc Create new record
  */
-router.post('/:pasienId', auth, create)
+router.post('/:pasienId', auth, createRiwayatKesehatan)
 
 /**
  * @method GET
@@ -19,7 +24,7 @@ router.post('/:pasienId', auth, create)
  * @access Private (self)
  * @desc Get all riwayat kesehatan record
  */
-router.get('/:pasienId', auth, getAll)
+router.get('/:pasienId', auth, getManyRiwayatKesehatan)
 
 /**
  * @method PUT
@@ -27,7 +32,7 @@ router.get('/:pasienId', auth, getAll)
  * @access Private (self)
  * @desc Update riwayat kesehatan record
  */
-router.put('/:id', auth, updateOne)
+router.put('/:id', auth, updateOneRiwayatKesehatan)
 
 /**
  * @method DELETE
@@ -35,6 +40,6 @@ router.put('/:id', auth, updateOne)
  * @access Private (self)
  * @desc Update riwayat kesehatan record
  */
-router.delete('/:id', auth, deleteOne)
+router.delete('/:id', auth, deleteOneRiwayatKesehatan)
 
 export default router

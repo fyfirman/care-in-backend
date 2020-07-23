@@ -4,6 +4,7 @@ import { Pasien } from '../entity/Pasien'
 import { Nakes } from '../entity/Nakes'
 import { compare } from 'bcryptjs'
 import { sign } from 'jsonwebtoken'
+import responseLogger from '../util/responseLogger'
 
 export const generateToken = async (req: Request, res: Response) => {
   const pasienRepo = getRepository(Pasien)
@@ -35,12 +36,14 @@ export const generateToken = async (req: Request, res: Response) => {
       expiresIn: remember === 'true' ? '30d' : '7d',
     })
 
+    responseLogger(req.method, 200, req.baseUrl + req.path, 'Login berhasil')
     res.json({
       success: true,
       message: 'Login berhasil',
       token,
     })
   } catch (err) {
+    responseLogger(req.method, 400, req.baseUrl + req.path, err.message)
     res.status(400).json({ success: false, message: err.message })
   }
 }
@@ -61,6 +64,7 @@ export const checkToken = (req: Request, res: Response) => {
     return days.toFixed(0) + ' hari'
   }
 
+  responseLogger(req.method, 200, req.baseUrl + req.path, 'Token valid')
   res.json({
     success: true,
     message: 'Token valid',

@@ -3,6 +3,7 @@ import { diskStorage } from 'multer'
 import { join } from 'path'
 import * as multer from 'multer'
 import { mkdirSync } from 'fs'
+import responseLogger from '../util/responseLogger'
 
 const ROOTDIR = join(__dirname, '..', '../')
 
@@ -34,6 +35,7 @@ export const uploadFoto = (req: Request, res: Response, next: NextFunction) => {
       if (err) throw new Error(err.message)
       next()
     } catch (err) {
+      responseLogger(req.method, 400, req.baseUrl + req.path, err.message)
       res.status(400).json({
         success: false,
         message: err.message,

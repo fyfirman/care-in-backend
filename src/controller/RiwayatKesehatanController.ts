@@ -5,8 +5,9 @@ import { validate } from 'class-validator'
 import { RiwayatKesehatan } from '../entity/RiwayatKesehatan'
 
 import validationDescriber from '../util/validationDescriber'
+import responseLogger from '../util/responseLogger'
 
-export const create = async (req: Request, res: Response) => {
+export const createRiwayatKesehatan = async (req: Request, res: Response) => {
   const riwayatKesRepo = getRepository(RiwayatKesehatan)
 
   const { pasienId } = req.params
@@ -22,18 +23,25 @@ export const create = async (req: Request, res: Response) => {
     riwayatKesehatan.namaPenyakit = namaPenyakit
 
     const errors = await validate(riwayatKesehatan)
-    if (errors.length > 0) throw new Error('Data registrasi tidak valid')
+    if (errors.length > 0) throw new Error('Data tidak valid')
 
     await riwayatKesRepo.save(riwayatKesehatan)
 
+    responseLogger(req.method, 201, req.baseUrl + req.path)
     res.status(201).json({ success: true, message: 'Berhasil menambah riwayat kesehatan' })
   } catch (err) {
     const constraints = validationDescriber(await validate(riwayatKesehatan))
-    res.status(400).json({ success: false, message: err.message, constraints })
+    let statusCode = 500
+
+    if (err.message === 'Akses tidak valid') statusCode = 403
+    if (err.message === 'Data tidak valid') statusCode = 400
+
+    responseLogger(req.method, statusCode, req.baseUrl + req.path, err.message)
+    res.status(statusCode).json({ success: false, message: err.message, constraints })
   }
 }
 
-export const getAll = async (req: Request, res: Response) => {
+export const getManyRiwayatKesehatan = async (req: Request, res: Response) => {
   const riwayatKesRepo = getRepository(RiwayatKesehatan)
 
   const { pasienId } = req.params
@@ -46,6 +54,7 @@ export const getAll = async (req: Request, res: Response) => {
       skip: limit && page && ((page as any) - 1) * (limit as any),
     })
 
+    responseLogger(req.method, 200, req.baseUrl + req.path)
     res.json({
       success: true,
       message: 'Berhasil mengambil riwayat kesehatan',
@@ -55,11 +64,13 @@ export const getAll = async (req: Request, res: Response) => {
       riwayatKesehatan,
     })
   } catch (err) {
-    res.status(500).json({ success: false, message: err.message })
+    let statusCode = 500
+    responseLogger(req.method, statusCode, req.baseUrl + req.path, err.message)
+    res.status(statusCode).json({ success: false, message: err.message })
   }
 }
 
-export const updateOne = async (req: Request, res: Response) => {
+export const updateOneRiwayatKesehatan = async (req: Request, res: Response) => {
   const riwayatKesRepo = getRepository(RiwayatKesehatan)
 
   const id = req.params.id
@@ -75,21 +86,29 @@ export const updateOne = async (req: Request, res: Response) => {
     if (namaPenyakit) riwayatKesehatan.namaPenyakit = namaPenyakit
 
     const errors = await validate(riwayatKesehatan)
-    if (errors.length > 0) throw new Error('Data registrasi tidak valid')
+    if (errors.length > 0) throw new Error('Data tidak valid')
 
     await riwayatKesRepo.save(riwayatKesehatan)
 
+    responseLogger(req.method, 200, req.baseUrl + req.path)
     res.json({
       success: true,
       message: 'Berhasil update riwayat kesehatan',
     })
   } catch (err) {
     const constraints = validationDescriber(await validate(riwayatKesehatan))
-    res.status(400).json({ success: false, message: err.message, constraints })
+    let statusCode = 500
+
+    if (err.message === 'Riwayat kesehatan tidak ditemukan') statusCode = 404
+    if (err.message === 'Akses tidak valid') statusCode = 403
+    if (err.message === 'Data tidak valid') statusCode = 400
+
+    responseLogger(req.method, statusCode, req.baseUrl + req.path, err.message)
+    res.status(statusCode).json({ success: false, message: err.message, constraints })
   }
 }
 
-export const deleteOne = async (req: Request, res: Response) => {
+export const deleteOneRiwayatKesehatan = async (req: Request, res: Response) => {
   const riwayatKesRepo = getRepository(RiwayatKesehatan)
 
   const id = req.params.id
@@ -102,11 +121,17 @@ export const deleteOne = async (req: Request, res: Response) => {
 
     await riwayatKesRepo.remove([riwayatKesehatan])
 
+    responseLogger(req.method, 202, req.baseUrl + req.path)
     res.json({
       success: true,
       message: 'Berhasil menghapus riwayat kesehatan',
     })
   } catch (err) {
-    res.status(400).json({ success: false, message: err.message })
+    let statusCode = 500
+    if (err.message === 'Riwayat kesehatan tidak ditemukan') statusCode = 404
+    if (err.message === 'Akses tidak valid') statusCode = 403
+
+    responseLogger(req.method, statusCode, req.baseUrl + req.path, err.message)
+    res.status(statusCode).json({ success: false, message: err.message })
   }
 }
