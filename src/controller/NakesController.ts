@@ -12,7 +12,7 @@ import responseLogger from '../util/responseLogger'
 export const createNakes = async (req: Request, res: Response) => {
   const nakesRepo = getRepository(Nakes)
 
-  const { jenis, nama, harga, username, password, email, noTelp } = req.body
+  const { jenis, nama, harga, username, password, email, noTelp, berbagiLokasi } = req.body
 
   const foto = req.file
 
@@ -37,6 +37,7 @@ export const createNakes = async (req: Request, res: Response) => {
     nakes.password = await bcrypt.hash(password, salt)
     nakes.email = email
     nakes.noTelp = phoneNumberFormat(noTelp)
+    if (typeof berbagiLokasi === 'boolean') nakes.berbagiLokasi = berbagiLokasi
     if (foto) nakes.foto = '/public/upload/foto/' + foto.filename
 
     // Select user with noTelp OR email OR username from request body
@@ -119,13 +120,23 @@ export const getOneNakes = async (req: Request, res: Response) => {
 export const getManyNakes = async (req: Request, res: Response) => {
   const nakesRepo = getRepository(Nakes)
 
-  const { page, limit, jenis, sort, order } = req.query
+  const { page, limit, jenis, berbagiLokasi, sort, order } = req.query
 
   const filter = {}
   if (jenis) filter['jenis'] = jenis
+  if (berbagiLokasi == 'true') filter['berbagiLokasi'] = true
+  if (berbagiLokasi == 'false') filter['berbagiLokasi'] = false
 
   const sortBy = {}
-  if (sort && order) sortBy[sort as string] = (order as string).toUpperCase()
+  if (sort && order) {
+    if (Array.isArray(sort) && Array.isArray(order) && sort.length === order.length) {
+      for (let i = 0; i < sort.length; i++) {
+        sortBy[sort[i] as string] = (order[i] as string).toUpperCase()
+      }
+    } else if (!Array.isArray(sort) && !Array.isArray(order)) {
+      sortBy[sort as string] = (order as string).toUpperCase()
+    }
+  }
 
   try {
     const nakes = await nakesRepo.find({
@@ -155,7 +166,7 @@ export const updateNakesProfile = async (req: Request, res: Response) => {
 
   const id = req.params.id
 
-  const { jenis, nama, harga, username, password, email, noTelp } = req.body
+  const { jenis, nama, harga, username, password, email, noTelp, berbagiLokasi } = req.body
 
   // If noTelp OR email OR username already exist
   // it will sent through response.constraints with the message
@@ -176,6 +187,7 @@ export const updateNakesProfile = async (req: Request, res: Response) => {
     if (email) nakes.email = email
     if (username) nakes.username = username
     if (password) nakes.password = await bcrypt.hash(password, salt)
+    if (typeof berbagiLokasi === 'boolean') nakes.berbagiLokasi = berbagiLokasi
 
     // Select user with noTelp OR email OR username from request body
     const nakesIsExist = await nakesRepo.find({
