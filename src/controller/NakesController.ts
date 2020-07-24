@@ -1,13 +1,13 @@
 import { Request, Response } from 'express'
-import { getRepository } from 'typeorm'
+import { getRepository, Like } from 'typeorm'
 import * as bcrypt from 'bcryptjs'
 import { validate } from 'class-validator'
-
 import { Nakes } from '../entity/Nakes'
-
 import validationDescriber from '../util/validationDescriber'
 import phoneNumberFormat from '../util/phoneNumberFormat'
 import responseLogger from '../util/responseLogger'
+import pointFormat from '../util/pointFormat'
+import Axios from 'axios'
 
 export const createNakes = async (req: Request, res: Response) => {
   const nakesRepo = getRepository(Nakes)
@@ -120,10 +120,12 @@ export const getOneNakes = async (req: Request, res: Response) => {
 export const getManyNakes = async (req: Request, res: Response) => {
   const nakesRepo = getRepository(Nakes)
 
-  const { page, limit, jenis, berbagiLokasi, sort, order } = req.query
+  const { origin, page, limit, jenis, berbagiLokasi, sort, order, nama, id } = req.query
 
   const filter = {}
   if (jenis) filter['jenis'] = jenis
+  if (nama) filter['nama'] = Like(`%${nama}%`)
+  if (id) filter['id'] = id
   if (berbagiLokasi == 'true') filter['berbagiLokasi'] = true
   if (berbagiLokasi == 'false') filter['berbagiLokasi'] = false
 
@@ -138,13 +140,111 @@ export const getManyNakes = async (req: Request, res: Response) => {
     }
   }
 
+  const findOrder = { ...sortBy }
+  if (findOrder['jarak']) delete findOrder['jarak']
+
   try {
     const nakes = await nakesRepo.find({
       where: filter,
-      take: limit as any,
-      skip: limit && page && ((page as any) - 1) * (limit as any),
-      order: sortBy,
+      order: findOrder,
+      take: !origin && (limit as any),
+      skip: !origin && limit && page && ((page as any) - 1) * (limit as any),
     })
+
+    if (!origin) {
+      responseLogger(req.method, 200, req.baseUrl + req.path)
+      return res.json({
+        success: true,
+        message: 'Berhasil mengambil daftar nakes',
+        total: await nakesRepo.count({ where: filter }),
+        limit: parseInt(limit as string) || 0,
+        page: parseInt(page as string) || 0,
+        nakes: nakes,
+      })
+    }
+
+    const rad = (x) => {
+      return (x * Math.PI) / 180
+    }
+
+    const getDistance = (p1, p2) => {
+      let R = 6378137 // Earth’s mean radius in meter
+      let dLat = rad(p2.lat - p1.lat)
+      let dLong = rad(p2.lng - p1.lng)
+      let a =
+        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos(rad(p1.lat)) * Math.cos(rad(p2.lat)) * Math.sin(dLong / 2) * Math.sin(dLong / 2)
+      let c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+      let distance = R * c
+      return distance // returns the distance in meter
+    }
+
+    const getDestination = (nakes) => {
+      let destination = ''
+      nakes.forEach((nakes) => {
+        destination += Object.values(nakes.lokasi).join(',') + '|'
+      })
+      return destination.slice(0, -1)
+    }
+
+    const googleDistanceMatrixAPI = 'https://maps.googleapis.com/maps/api/distancematrix/json'
+    const parameters = {
+      key: process.env.GOOGLE_API_KEY,
+      origins: Object.values(pointFormat(origin)).join(','),
+      destinations: getDestination(nakes),
+    }
+    const { key, origins, destinations } = parameters
+    const requestURL = `${googleDistanceMatrixAPI}?origins=${origins}&destinations=${destinations}&key=${key}`
+    const jarakNakes: any = await Axios.get(requestURL)
+
+    const dataNakes = []
+    if (jarakNakes.data.status === 'OK') {
+      nakes.forEach((nakes, i) => {
+        dataNakes.push({
+          ...nakes,
+          password: undefined,
+          jarak: {
+            nilai: jarakNakes.data.rows[0].elements[i].distance.value,
+            teks: jarakNakes.data.rows[0].elements[i].distance.text,
+          },
+        })
+      })
+    } else {
+      nakes.forEach((nakes) => {
+        let jarakNilai = parseInt(getDistance(pointFormat(origin), nakes.lokasi) + '')
+        let jarakTeks =
+          jarakNilai < 1000
+            ? '~' + jarakNilai.toFixed(0) + ' m'
+            : '~' + (jarakNilai / 1000).toFixed(1) + ' km'
+        dataNakes.push({
+          ...nakes,
+          password: undefined,
+          jarak: {
+            nilai: jarakNilai,
+            teks: jarakTeks,
+          },
+        })
+      })
+    }
+
+    const sortedByJarak = dataNakes.sort((a, b) => {
+      if (sortBy.hasOwnProperty('jarak')) {
+        if (sortBy['jarak'] === 'asc' || sortBy['jarak'] === 'ASC') {
+          if (a.jarak.nilai < b.jarak.nilai) return -1
+          if (a.jarak.nilai > b.jarak.nilai) return 1
+        } else if (sortBy['jarak'] === 'desc' || sortBy['jarak'] === 'DESC') {
+          if (a.jarak.nilai < b.jarak.nilai) return 1
+          if (a.jarak.nilai > b.jarak.nilai) return -1
+        }
+      }
+      return 0
+    })
+
+    const paginateArray = (array, pageSize, pageNumber) => {
+      return array.slice((pageNumber - 1) * pageSize, pageNumber * pageSize)
+    }
+
+    const nakesResult = limit && page ? paginateArray(sortedByJarak, limit, page) : sortedByJarak
 
     responseLogger(req.method, 200, req.baseUrl + req.path)
     res.json({
@@ -153,7 +253,7 @@ export const getManyNakes = async (req: Request, res: Response) => {
       total: await nakesRepo.count({ where: filter }),
       limit: parseInt(limit as string) || 0,
       page: parseInt(page as string) || 0,
-      nakes,
+      nakes: nakesResult,
     })
   } catch (err) {
     responseLogger(req.method, 500, req.baseUrl + req.path, err.message)

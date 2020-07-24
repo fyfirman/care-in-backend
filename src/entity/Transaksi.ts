@@ -9,6 +9,8 @@ import {
 } from 'typeorm'
 import { Pasien } from './Pasien'
 import { Nakes } from './Nakes'
+import { AfterLoad } from 'typeorm'
+import pointFormat from '../util/pointFormat'
 
 @Entity()
 export class Transaksi extends BaseEntity {
@@ -29,11 +31,14 @@ export class Transaksi extends BaseEntity {
 
   @Column('point')
   @Index({ spatial: true })
-  pasienLokasi: string
+  pasienLokasi: string | Object
 
   @Column('point')
   @Index({ spatial: true })
-  nakesLokasi: string
+  nakesLokasi: string | Object
+
+  @Column()
+  meter: number
 
   @Column({ default: false })
   berhasil: boolean
@@ -41,6 +46,11 @@ export class Transaksi extends BaseEntity {
   @Column()
   status: string
 
-  @Column({ default: 'now()' })
+  @Column({ default: () => 'CURRENT_TIMESTAMP' })
   waktuDibuat: 'timestamp'
+
+  @AfterLoad() _convertPoints() {
+    this.pasienLokasi = pointFormat(this.pasienLokasi)
+    this.nakesLokasi = pointFormat(this.nakesLokasi)
+  }
 }

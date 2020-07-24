@@ -1,8 +1,18 @@
-import { Entity, BaseEntity, PrimaryGeneratedColumn, Column, OneToMany, AfterLoad } from 'typeorm'
+import {
+  Entity,
+  BaseEntity,
+  PrimaryGeneratedColumn,
+  Column,
+  OneToMany,
+  AfterLoad,
+  Index,
+} from 'typeorm'
 import { IsPositive, IsNotEmpty, IsEmail, IsNumberString } from 'class-validator'
 import { Transaksi } from './Transaksi'
 import { Chat } from './Chat'
 import { RiwayatTransaksi } from './RiwayatTransaksi'
+import pointFormat from '../util/pointFormat'
+import { DSAKeyPairKeyObjectOptions } from 'crypto'
 
 @Entity()
 export class Nakes extends BaseEntity {
@@ -41,11 +51,18 @@ export class Nakes extends BaseEntity {
   @Column({ default: false })
   berbagiLokasi: boolean
 
+  @Column('point')
+  @Index({ spatial: true })
+  lokasi: string | Object
+
   @Column({ nullable: false })
   foto: string
 
   @AfterLoad() _convertNumerics() {
     this.harga = parseFloat(this.harga as any)
+  }
+  @AfterLoad() _convertPoints() {
+    this.lokasi = pointFormat(this.lokasi)
   }
 
   @OneToMany(() => Transaksi, (transaksi) => transaksi.nakes)

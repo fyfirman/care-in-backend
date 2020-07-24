@@ -37,6 +37,6 @@ export class Chat extends BaseEntity {
   @Column()
   isi: string
 
-  @Column({ default: 'now()' })
+  @Column({ default: () => 'CURRENT_TIMESTAMP' })
   waktuDibuat: 'timestamp'
 }

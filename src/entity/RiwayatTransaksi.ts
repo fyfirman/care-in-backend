@@ -51,16 +51,16 @@ export class RiwayatTransaksi extends BaseEntity {
   @IsNotEmpty({ message: 'biaya admin harus diisi' })
   biayaAdmin: number
 
-  @Column({ default: 'now()' })
+  @Column({ default: () => 'CURRENT_TIMESTAMP' })
   waktuDibuat: 'timestamp'
 
   @Column({ default: false })
   sakit: boolean
 
-  @Column()
+  @Column({ nullable: true })
   namaPenyakit: string
 
-  @Column()
+  @Column({ nullable: true })
   catatan: string
 
   @AfterLoad() _convertNumerics() {

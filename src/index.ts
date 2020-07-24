@@ -10,6 +10,7 @@ import PasienRoute from './route/PasienRoute'
 import AuthRoute from './route/AuthRoute'
 import RiwayatKesehatanRoute from './route/RiwayatKesehatanRoute'
 import NakesRoute from './route/NakesRoute'
+import TransaksiRoute from './route/TransaksiRoute'
 
 // Load .env file
 dotenv.config({ path: '.env' })
@@ -34,6 +35,7 @@ createConnection()
     app.use('/api/v1/auth', AuthRoute)
     app.use('/api/v1/riwayat-kesehatan', RiwayatKesehatanRoute)
     app.use('/api/v1/nakes', NakesRoute)
+    app.use('/api/v1/transaksi', TransaksiRoute)
 
     // Run express server
     app.listen(PORT, () => {
