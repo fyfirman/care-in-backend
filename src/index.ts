@@ -6,6 +6,7 @@ import { Application } from 'express'
 import { join } from 'path'
 import * as http from 'http'
 import * as socketio from 'socket.io'
+import * as cors from 'cors'
 
 // Importing routes
 import PasienRoute from './route/PasienRoute'
@@ -28,6 +29,7 @@ createConnection()
     // Applying middlewares
     app.use(express.json())
     app.use(express.urlencoded({ extended: true }))
+    app.use(cors())
 
     // Serve express static folder
     app.use('/public', express.static(join(__dirname, '../public')))
