@@ -4,7 +4,7 @@ import responseLogger from '../util/responseLogger'
 import { Nakes } from '../entity/Nakes'
 import { RiwayatTransaksi } from '../entity/RiwayatTransaksi'
 import { RiwayatKesehatan } from '../entity/RiwayatKesehatan'
-import { getManager, Not, getRepository } from 'typeorm'
+import { Not, getRepository } from 'typeorm'
 import { Chat } from '../entity/Chat'
 
 export const pesanNakes = async (req: Request, res: Response) => {
@@ -270,7 +270,7 @@ export const transaksiChatAmbil = async (req: Request, res: Response) => {
         transaksiId,
       },
       order: {
-        waktuDibuat: 'DESC',
+        waktuDibuat: 'ASC',
       },
     })
 
