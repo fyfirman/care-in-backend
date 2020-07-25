@@ -8,3 +8,12 @@ router.get('/jenis-nakes', (req: Request, res: Response) => {
     jenis: ['dokter', 'perawat', 'psikolog'],
   })
 })
+
+router.get('/status-transaksi', (req: Request, res: Response) => {
+  res.json({
+    success: true,
+    status: ['pending', 'berjalan', 'selesai'],
+  })
+})
+
+export default router

@@ -35,8 +35,8 @@
     "typeorm": "0.2.25"
   },
   "scripts": {
-    "start": "ts-node build/index.js",
+    "start": "node build/index.js",
     "dev": "nodemon src/index.ts",
-    "build": "tsc -p ."
+    "build": "tsc -p . && cp .env build/.env"
   }
 }

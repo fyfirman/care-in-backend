@@ -9,6 +9,7 @@ import * as socketio from 'socket.io'
 import * as cors from 'cors'
 
 // Importing routes
+import PublicRoute from './route/PublicRoute'
 import PasienRoute from './route/PasienRoute'
 import AuthRoute from './route/AuthRoute'
 import RiwayatKesehatanRoute from './route/RiwayatKesehatanRoute'
@@ -35,6 +36,7 @@ createConnection()
     app.use('/public', express.static(join(__dirname, '../public')))
 
     // Appliying routes
+    app.use('/api/v1', PublicRoute)
     app.use('/api/v1/pasien', PasienRoute)
     app.use('/api/v1/auth', AuthRoute)
     app.use('/api/v1/riwayat-kesehatan', RiwayatKesehatanRoute)
