@@ -52,7 +52,7 @@ export class Transaksi extends BaseEntity {
   @Column()
   status: string
 
-  @Column({ default: () => 'CURRENT_TIMESTAMP' })
+  @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   waktuDibuat: 'timestamp'
 
   @AfterLoad() _convertPoints() {
