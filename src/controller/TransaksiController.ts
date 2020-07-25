@@ -4,7 +4,8 @@ import responseLogger from '../util/responseLogger'
 import { Nakes } from '../entity/Nakes'
 import { RiwayatTransaksi } from '../entity/RiwayatTransaksi'
 import { RiwayatKesehatan } from '../entity/RiwayatKesehatan'
-import { Not } from 'typeorm'
+import { getManager, Not, getRepository } from 'typeorm'
+import { Chat } from '../entity/Chat'
 
 export const pesanNakes = async (req: Request, res: Response) => {
   const pasienId = req.user.id
@@ -21,16 +22,10 @@ export const pesanNakes = async (req: Request, res: Response) => {
     if (!jarak || !pasienLokasi) throw new Error('Data tidak lengkap')
 
     const transaksiBerjalan = await Transaksi.findOne({
-      where: [
-        {
-          pasienId,
-          status: 'pending',
-        },
-        {
-          pasienId,
-          status: 'berjalan',
-        },
-      ],
+      where: {
+        pasienId,
+        status: Not('selesai'),
+      },
     })
 
     if (transaksiBerjalan) throw new Error('Anda masih memiliki transaksi yang sedang berjalan')
@@ -187,18 +182,20 @@ export const updateOneTransaksi = async (req: Request, res: Response) => {
 }
 
 export const getRiwayatTransaksi = async (req: Request, res: Response) => {
-  const { limit, page } = req.query
+  const { user, limit, page } = req.query
+
+  const whereId = user === 'nakes' ? 'nakesId' : 'pasienId'
 
   try {
     const transaksiBerjalan = await Transaksi.findOne({
       where: {
-        pasienId: req.user.id,
+        [whereId]: req.user.id,
         status: Not('selesai'),
       },
     })
 
     const riwayatTransaksi = await RiwayatTransaksi.find({
-      where: { pasienId: req.user.id },
+      where: { [whereId]: req.user.id },
       take: limit as any,
       skip: limit && page && ((page as any) - 1) * (limit as any),
       order: {
@@ -219,6 +216,90 @@ export const getRiwayatTransaksi = async (req: Request, res: Response) => {
   } catch (err) {
     responseLogger(req.method, 500, req.baseUrl + req.path)
     res.json({
+      success: false,
+      message: err.message,
+    })
+  }
+}
+
+export const transaksiChatKirim = async (req: Request, res: Response) => {
+  const transaksiId = req.params.transaksiId
+  const { isi } = req.body
+
+  const transaksi = await Transaksi.findOne(transaksiId)
+
+  try {
+    if (!transaksi) throw new Error('Transaksi tidak ditemukan')
+    if (transaksi.pasienId !== req.user.id && transaksi.nakesId !== req.user.id)
+      throw new Error('Akses tidak valid')
+    if (!isi) throw new Error('Data tidak valid')
+
+    const chat = new Chat()
+    chat.transaksiId = transaksiId
+    chat.pengirimId = req.user.id
+    chat.isi = isi
+
+    await Chat.save(chat)
+
+    responseLogger(req.method, 201, req.baseUrl + req.path)
+    res.status(201).json({
+      success: true,
+      message: 'Berhasil mengirim chat',
+    })
+  } catch (err) {
+    let statusCode = 500
+
+    if (err.message === 'Transaksi tidak ditemukan') statusCode = 404
+    if (err.message === 'Akses tidak valid') statusCode = 403
+    if (err.mesasge === 'Data tidak valid') statusCode = 400
+
+    responseLogger(req.method, statusCode, req.baseUrl + req.path, err.message)
+    res.status(statusCode).json({
+      success: false,
+      message: err.message,
+    })
+  }
+}
+
+export const transaksiChatAmbil = async (req: Request, res: Response) => {
+  const transaksiId = req.params.transaksiId
+
+  try {
+    const chat = await Chat.find({
+      where: {
+        transaksiId,
+      },
+      order: {
+        waktuDibuat: 'DESC',
+      },
+    })
+
+    if (!chat[0]) throw new Error('Chat kosong')
+
+    const pengirimIds = await getRepository(Chat)
+      .createQueryBuilder('chat')
+      .select('chat.pengirimId', 'id')
+      .distinct(true)
+      .where('chat.transaksiId = :transaksiId', { transaksiId })
+      .getRawMany()
+
+    if (pengirimIds[0].id !== req.user.id && pengirimIds[1].id !== req.user.id)
+      throw new Error('Akses tidak valid')
+
+    responseLogger(req.method, 200, req.baseUrl + req.path)
+    res.json({
+      success: true,
+      message: 'Berhasil mengambil chat transaksi',
+      chat,
+    })
+  } catch (err) {
+    let statusCode = 500
+
+    if (err.message === 'Chat kosong') statusCode = 200
+    if (err.message === 'Akses tidak valid') statusCode = 403
+
+    responseLogger(req.method, statusCode, req.baseUrl + req.path, err.message)
+    res.status(statusCode).json({
       success: false,
       message: err.message,
     })

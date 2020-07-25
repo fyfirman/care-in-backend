@@ -1,7 +1,5 @@
 import { BaseEntity, Column, Entity, PrimaryGeneratedColumn, JoinColumn, ManyToOne } from 'typeorm'
 import { Transaksi } from './Transaksi'
-import { Pasien } from './Pasien'
-import { Nakes } from './Nakes'
 
 @Entity()
 export class Chat extends BaseEntity {
