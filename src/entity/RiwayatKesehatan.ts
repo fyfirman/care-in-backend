@@ -9,7 +9,9 @@ export class RiwayatKesehatan extends BaseEntity {
 
   @Column()
   pasienId: string
-  @ManyToOne(() => Pasien, (pasien) => pasien.riwayatKesehatan)
+  @ManyToOne(() => Pasien, (pasien) => pasien.riwayatKesehatan, {
+    onDelete: 'CASCADE',
+  })
   @JoinColumn({ name: 'pasienId' })
   pasien: Pasien
 

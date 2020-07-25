@@ -2,7 +2,6 @@ import { Entity, BaseEntity, PrimaryGeneratedColumn, Column, OneToMany, AfterLoa
 import { IsNotEmpty, IsDate, Length, IsEmail, IsNumberString } from 'class-validator'
 import { RiwayatKesehatan } from './RiwayatKesehatan'
 import { Transaksi } from './Transaksi'
-import { Chat } from './Chat'
 import { RiwayatTransaksi } from './RiwayatTransaksi'
 
 @Entity()
@@ -64,9 +63,6 @@ export class Pasien extends BaseEntity {
 
   @OneToMany(() => Transaksi, (transaksi) => transaksi.pasien)
   transaksi: Transaksi[]
-
-  @OneToMany(() => Chat, (chat) => chat.pasien)
-  chat: Chat[]
 
   @OneToMany(() => RiwayatTransaksi, (riwayatTransaksi) => riwayatTransaksi.pasien)
   riwayatTransaksi: RiwayatTransaksi[]

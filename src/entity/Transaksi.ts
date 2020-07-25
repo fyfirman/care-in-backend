@@ -6,11 +6,13 @@ import {
   ManyToOne,
   JoinColumn,
   Index,
+  OneToMany,
 } from 'typeorm'
 import { Pasien } from './Pasien'
 import { Nakes } from './Nakes'
 import { AfterLoad } from 'typeorm'
 import pointFormat from '../util/pointFormat'
+import { Chat } from './Chat'
 
 @Entity()
 export class Transaksi extends BaseEntity {
@@ -19,13 +21,17 @@ export class Transaksi extends BaseEntity {
 
   @Column()
   pasienId: string
-  @ManyToOne(() => Pasien, (pasien) => pasien.transaksi)
+  @ManyToOne(() => Pasien, (pasien) => pasien.transaksi, {
+    onDelete: 'CASCADE',
+  })
   @JoinColumn({ name: 'pasienId' })
   pasien: Pasien
 
   @Column()
   nakesId: string
-  @ManyToOne(() => Nakes, (nakes) => nakes.transaksi)
+  @ManyToOne(() => Nakes, (nakes) => nakes.transaksi, {
+    onDelete: 'CASCADE',
+  })
   @JoinColumn({ name: 'nakesId' })
   nakes: Nakes
 
@@ -53,4 +59,7 @@ export class Transaksi extends BaseEntity {
     this.pasienLokasi = pointFormat(this.pasienLokasi)
     this.nakesLokasi = pointFormat(this.nakesLokasi)
   }
+
+  @OneToMany(() => Chat, (chat) => chat.transaksi)
+  chat: Chat[]
 }

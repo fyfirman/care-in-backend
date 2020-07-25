@@ -314,7 +314,7 @@ export const deleteOnePasien = async (req: Request, res: Response) => {
     if (!pasien) throw new Error('Pasien tidak ditemukan')
     if (id !== req.user.id) throw new Error('Akses tidak valid')
 
-    await pasienRepo.delete(pasien)
+    await pasienRepo.remove(pasien)
 
     responseLogger(req.method, 202, req.baseUrl + req.path)
     res.status(202).json({ success: true, message: 'Berhasil menghapus pasien' })

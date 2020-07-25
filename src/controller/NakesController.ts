@@ -394,7 +394,7 @@ export const deleteOneNakes = async (req: Request, res: Response) => {
     if (!nakes) throw new Error('Nakes tidak ditemukan')
     if (id !== req.user.id) throw new Error('Akses tidak valid')
 
-    await nakesRepo.delete(nakes)
+    await nakesRepo.remove(nakes)
 
     responseLogger(req.method, 202, req.baseUrl + req.path)
     res.status(202).json({ success: true, message: 'Berhasil menghapus nakes' })

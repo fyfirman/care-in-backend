@@ -20,19 +20,25 @@ export class RiwayatTransaksi extends BaseEntity {
 
   @Column()
   transaksiId: string
-  @OneToOne(() => Transaksi)
+  @OneToOne(() => Transaksi, {
+    onDelete: 'CASCADE',
+  })
   @JoinColumn({ name: 'transaksiId' })
   transaksi: Transaksi
 
   @Column()
   pasienId: string
-  @ManyToOne(() => Pasien, (pasien) => pasien.riwayatTransaksi)
+  @ManyToOne(() => Pasien, (pasien) => pasien.riwayatTransaksi, {
+    onDelete: 'CASCADE',
+  })
   @JoinColumn({ name: 'pasienId' })
   pasien: Pasien
 
   @Column()
   nakesId: string
-  @ManyToOne(() => Nakes, (nakes) => nakes.riwayatTransaksi)
+  @ManyToOne(() => Nakes, (nakes) => nakes.riwayatTransaksi, {
+    onDelete: 'CASCADE',
+  })
   @JoinColumn({ name: 'nakesId' })
   nakes: Nakes
 

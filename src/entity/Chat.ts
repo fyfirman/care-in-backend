@@ -1,12 +1,4 @@
-import {
-  BaseEntity,
-  Column,
-  Entity,
-  PrimaryGeneratedColumn,
-  OneToOne,
-  JoinColumn,
-  ManyToOne,
-} from 'typeorm'
+import { BaseEntity, Column, Entity, PrimaryGeneratedColumn, JoinColumn, ManyToOne } from 'typeorm'
 import { Transaksi } from './Transaksi'
 import { Pasien } from './Pasien'
 import { Nakes } from './Nakes'
@@ -18,21 +10,14 @@ export class Chat extends BaseEntity {
 
   @Column()
   transaksiId: string
-  @OneToOne(() => Transaksi)
+  @ManyToOne(() => Transaksi, (transaksi) => transaksi.chat, {
+    onDelete: 'CASCADE',
+  })
   @JoinColumn({ name: 'transaksiId' })
   transaksi: Transaksi
 
-  @Column()
-  pasienId: string
-  @ManyToOne(() => Pasien, (pasien) => pasien.chat)
-  @JoinColumn({ name: 'pasienId' })
-  pasien: Pasien
-
-  @Column()
-  nakesId: string
-  @ManyToOne(() => Nakes, (nakes) => nakes.chat)
-  @JoinColumn({ name: 'nakesId' })
-  nakes: Nakes
+  @Column('uuid')
+  pengirimId: string
 
   @Column()
   isi: string

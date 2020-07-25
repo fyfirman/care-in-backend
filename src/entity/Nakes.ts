@@ -9,10 +9,8 @@ import {
 } from 'typeorm'
 import { IsPositive, IsNotEmpty, IsEmail, IsNumberString } from 'class-validator'
 import { Transaksi } from './Transaksi'
-import { Chat } from './Chat'
 import { RiwayatTransaksi } from './RiwayatTransaksi'
 import pointFormat from '../util/pointFormat'
-import { DSAKeyPairKeyObjectOptions } from 'crypto'
 
 @Entity()
 export class Nakes extends BaseEntity {
@@ -67,9 +65,6 @@ export class Nakes extends BaseEntity {
 
   @OneToMany(() => Transaksi, (transaksi) => transaksi.nakes)
   transaksi: Transaksi[]
-
-  @OneToMany(() => Chat, (chat) => chat.nakes)
-  chat: Chat[]
 
   @OneToMany(() => RiwayatTransaksi, (riwayatTransaksi) => riwayatTransaksi.nakes)
   riwayatTransaksi: RiwayatTransaksi[]
