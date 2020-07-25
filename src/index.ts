@@ -4,6 +4,8 @@ import * as dotenv from 'dotenv'
 import * as express from 'express'
 import { Application } from 'express'
 import { join } from 'path'
+import * as http from 'http'
+import * as socketio from 'socket.io'
 
 // Importing routes
 import PasienRoute from './route/PasienRoute'
@@ -38,8 +40,24 @@ createConnection()
     app.use('/api/v1/transaksi', TransaksiRoute)
 
     // Run express server
-    app.listen(PORT, () => {
+    const server = http.createServer(app)
+    server.listen(PORT, () => {
       console.log(`Server running on port ${PORT} ...\n`)
+    })
+
+    // socket io connection
+    const io = socketio(server)
+    io.on('connection', (socket) => {
+      // user joins the channel
+      // by emitting 'joinRoom'
+      socket.on('joinRoom', (data) => {
+        socket.join(data.transaksiId)
+      })
+
+      // user sends the chat
+      socket.on('sendChat', (data) => {
+        socket.to(data.transaksiId).emit('receiveChat', data)
+      })
     })
   })
   .catch((err) => {
