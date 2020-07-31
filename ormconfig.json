@@ -7,9 +7,9 @@
   "database": "hipsmu",
   "synchronize": true,
   "logging": false,
-  "entities": ["src/entity/**/*.ts"],
-  "migrations": ["src/migration/**/*.ts"],
-  "subscribers": ["src/subscriber/**/*.ts"],
+  "entities": ["src/entity/**/*.ts", "build/entity/**/*"],
+  "migrations": ["src/migration/**/*.ts", "build/migration/**/*"],
+  "subscribers": ["src/subscriber/**/*.ts", "build/subscriber/**/*"],
   "cli": {
     "entitiesDir": "src/entity",
     "migrationsDir": "src/migration",
