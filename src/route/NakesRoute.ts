@@ -5,9 +5,9 @@ import {
   getManyNakes,
   updateNakesProfile,
   updateNakesFoto,
+  deleteOneNakes,
 } from '../controller/NakesController'
 import { auth } from '../middleware/auth'
-import { deleteOneNakes } from '../controller/NakesController'
 import { uploadFoto } from '../middleware/upload'
 
 const router = Router()

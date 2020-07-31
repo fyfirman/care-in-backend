@@ -12,7 +12,7 @@ import Axios from 'axios'
 export const createNakes = async (req: Request, res: Response) => {
   const nakesRepo = getRepository(Nakes)
 
-  const { jenis, nama, harga, username, password, email, noTelp, berbagiLokasi } = req.body
+  const { jenis, nama, harga, username, password, email, noTelp, berbagiLokasi, lokasi } = req.body
 
   const foto = req.file
 
@@ -39,6 +39,9 @@ export const createNakes = async (req: Request, res: Response) => {
     nakes.noTelp = phoneNumberFormat(noTelp)
     if (typeof berbagiLokasi === 'boolean') nakes.berbagiLokasi = berbagiLokasi
     if (foto) nakes.foto = '/public/upload/foto/' + foto.filename
+
+    if (lokasi) nakes.lokasi = `POINT(${lokasi.lat} ${lokasi.lng})`
+    else nakes.lokasi = 'POINT(0 0)'
 
     // Select user with noTelp OR email OR username from request body
     const nakesIsExist = await nakesRepo.find({
@@ -266,7 +269,7 @@ export const updateNakesProfile = async (req: Request, res: Response) => {
 
   const id = req.params.id
 
-  const { jenis, nama, harga, username, password, email, noTelp, berbagiLokasi } = req.body
+  const { jenis, nama, harga, username, password, email, noTelp, berbagiLokasi, lokasi } = req.body
 
   // If noTelp OR email OR username already exist
   // it will sent through response.constraints with the message
@@ -288,6 +291,7 @@ export const updateNakesProfile = async (req: Request, res: Response) => {
     if (username) nakes.username = username
     if (password) nakes.password = await bcrypt.hash(password, salt)
     if (typeof berbagiLokasi === 'boolean') nakes.berbagiLokasi = berbagiLokasi
+    if (lokasi) nakes.lokasi = `POINT(${lokasi.lat} ${lokasi.lng})`
 
     // Select user with noTelp OR email OR username from request body
     const nakesIsExist = await nakesRepo.find({
