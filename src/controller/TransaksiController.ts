@@ -6,6 +6,13 @@ import { RiwayatTransaksi } from '../entity/RiwayatTransaksi'
 import { RiwayatKesehatan } from '../entity/RiwayatKesehatan'
 import { Not, getRepository } from 'typeorm'
 import { Chat } from '../entity/Chat'
+import calcBiayaTranspor from '../util/calcBiayaTranspor'
+
+enum StatusTransaksi {
+  pending = 'pending',
+  berjalan = 'berjalan',
+  selesai = 'selesai',
+}
 
 export const pesanNakes = async (req: Request, res: Response) => {
   const pasienId = req.user.id
@@ -93,7 +100,16 @@ export const updateOneTransaksi = async (req: Request, res: Response) => {
 
     if (!transaksi) throw new Error('Transaksi tidak ditemukan')
 
-    if (status) updateState.status = status
+    if (status) {
+      let statusIsValid = false
+      for (let s in StatusTransaksi) {
+        if (status === s) {
+          updateState.status = status
+          statusIsValid = true
+        }
+      }
+      if (!statusIsValid) throw new Error('Status tidak valid')
+    }
     if (berhasil === true) updateState.berhasil = true
     if (berhasil === false) updateState.berhasil = false
 
@@ -123,15 +139,8 @@ export const updateOneTransaksi = async (req: Request, res: Response) => {
       let biayaAwalAdmin = parseFloat(process.env.ADMIN_PERCENT_PRICE)
       if (!biayaAdmin) biayaAdmin = transaksi.nakes.harga * biayaAwalAdmin
 
-      let biayaAwalTranspor = parseInt(process.env.TRANSPORT_PER_KM_PRICE)
-      if (!biayaTranspor) {
-        let biayaTransporStr = ((transaksi.meter / 1000) * biayaAwalTranspor).toFixed(0)
-        if (biayaTransporStr.length > 3) {
-          biayaTransporStr = biayaTransporStr.slice(0, -3) + '000'
-          biayaTranspor = parseInt(biayaTransporStr)
-          if (biayaTranspor < biayaAwalTranspor) biayaTranspor = biayaAwalTranspor
-        } else biayaTranspor = biayaAwalTranspor
-      } else biayaTranspor = parseInt(biayaTranspor)
+      if (!biayaTranspor) biayaTranspor = calcBiayaTranspor(transaksi.meter)
+      else biayaTranspor = parseInt(biayaTranspor)
 
       if (sakit === true) sakit = true
 
@@ -173,6 +182,7 @@ export const updateOneTransaksi = async (req: Request, res: Response) => {
     )
     let statusCode = 500
     if (err.message === 'Transaksi tidak ditemukan') statusCode = 404
+    if (err.message === 'Status tidak valid') statusCode = 400
     responseLogger(req.method, statusCode, req.baseUrl + req.path, err.message)
     res.status(statusCode).json({
       success: false,
@@ -203,6 +213,33 @@ export const getRiwayatTransaksi = async (req: Request, res: Response) => {
       },
     })
 
+    let totalBelumSetor
+    let totalTelahSetor
+    let totalJasaTranspor
+
+    if (user === 'nakes') {
+      totalBelumSetor = await getRepository(RiwayatTransaksi)
+        .createQueryBuilder('rtr')
+        .select('SUM(rtr.biayaAdmin)', 'total')
+        .where('rtr.nakesId = :nakesId', { nakesId: req.user.id })
+        .andWhere('rtr.telahSetor = false')
+        .getRawOne()
+
+      totalTelahSetor = await getRepository(RiwayatTransaksi)
+        .createQueryBuilder('rtr')
+        .select('SUM(rtr.biayaAdmin)', 'total')
+        .where('rtr.nakesId = :nakesId', { nakesId: req.user.id })
+        .andWhere('rtr.telahSetor = true')
+        .getRawOne()
+
+      totalJasaTranspor = await getRepository(RiwayatTransaksi)
+        .createQueryBuilder('rtr')
+        .select('SUM(rtr.biayaTranspor)', 'transpor')
+        .addSelect('SUM(rtr.biayaJasa)', 'jasa')
+        .where('rtr.nakesId = :nakesId', { nakesId: req.user.id })
+        .getRawOne()
+    }
+
     responseLogger(req.method, 200, req.baseUrl + req.path)
     res.json({
       success: true,
@@ -211,6 +248,14 @@ export const getRiwayatTransaksi = async (req: Request, res: Response) => {
       total: await RiwayatTransaksi.count(),
       limit: parseInt(limit as string) || 0,
       page: parseInt(page as string) || 0,
+      totalBelumSetor: user === 'nakes' ? parseFloat(totalBelumSetor.total) || 0 : undefined,
+      totalTelahSetor: user === 'nakes' ? parseFloat(totalTelahSetor.total) || 0 : undefined,
+      totalPendapatan:
+        user === 'nakes'
+          ? (parseFloat(totalJasaTranspor.jasa) || 0) -
+            (parseFloat(totalBelumSetor.total) || 0) -
+            (parseFloat(totalTelahSetor.total) || 0)
+          : undefined,
       riwayatTransaksi,
     })
   } catch (err) {

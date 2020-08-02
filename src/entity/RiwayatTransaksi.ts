@@ -43,19 +43,21 @@ export class RiwayatTransaksi extends BaseEntity {
   nakes: Nakes
 
   @Column({ type: 'decimal', precision: 11, scale: 2 })
-  @IsPositive({ message: 'biaya jasa harus bernilai positif' })
   @IsNotEmpty({ message: 'biaya jasa harus diisi' })
   biayaJasa: number
 
   @Column({ type: 'decimal', precision: 11, scale: 2 })
-  @IsPositive({ message: 'biaya transpor harus bernilai positif' })
   @IsNotEmpty({ message: 'biaya transpor harus diisi' })
   biayaTranspor: number
 
   @Column({ type: 'decimal', precision: 11, scale: 2 })
-  @IsPositive({ message: 'biaya admin harus bernilai positif' })
   @IsNotEmpty({ message: 'biaya admin harus diisi' })
   biayaAdmin: number
+
+  totalBiaya: number
+
+  @Column({ default: false })
+  telahSetor: boolean
 
   @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   waktuDibuat: 'timestamp'
@@ -73,5 +75,6 @@ export class RiwayatTransaksi extends BaseEntity {
     this.biayaJasa = parseFloat(this.biayaJasa as any)
     this.biayaTranspor = parseFloat(this.biayaTranspor as any)
     this.biayaAdmin = parseFloat(this.biayaAdmin as any)
+    this.totalBiaya = this.biayaJasa + this.biayaTranspor
   }
 }

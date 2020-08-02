@@ -8,11 +8,35 @@ import phoneNumberFormat from '../util/phoneNumberFormat'
 import responseLogger from '../util/responseLogger'
 import pointFormat from '../util/pointFormat'
 import Axios from 'axios'
+import calcBiayaTranspor from '../util/calcBiayaTranspor'
+
+enum Jenis {
+  dokter = 'dokter',
+  nakes = 'nakes',
+  psikolog = 'psikolog',
+}
+
+type Lokasi = {
+  lat: number
+  lng: number
+}
+
+interface Body {
+  nama: string
+  harga: number
+  username: string
+  password: string
+  email: string
+  noTelp: string
+  berbagiLokasi: boolean
+  lokasi: Lokasi
+  jenis: Jenis
+}
 
 export const createNakes = async (req: Request, res: Response) => {
   const nakesRepo = getRepository(Nakes)
 
-  const { jenis, nama, harga, username, password, email, noTelp, berbagiLokasi, lokasi } = req.body
+  const body: Body = req.body
 
   const foto = req.file
 
@@ -25,43 +49,53 @@ export const createNakes = async (req: Request, res: Response) => {
   const existProperties = []
 
   try {
-    if (!password || password.length < 8)
+    let jenisIsValid = false
+    for (let j in Jenis) {
+      if (body.jenis === j) jenisIsValid = true
+    }
+    if (!jenisIsValid) throw new Error('Jenis tidak valid')
+
+    if (!body.password || body.password.length < 8)
       throw new Error('Password harus lebih atau sama dengan 8 karakter')
 
     const salt = await bcrypt.genSalt(10)
 
-    nakes.nama = nama
-    nakes.jenis = jenis
-    nakes.harga = parseFloat(harga)
-    nakes.username = username
-    nakes.password = await bcrypt.hash(password, salt)
-    nakes.email = email
-    nakes.noTelp = phoneNumberFormat(noTelp)
-    if (typeof berbagiLokasi === 'boolean') nakes.berbagiLokasi = berbagiLokasi
+    nakes.nama = body.nama
+    nakes.jenis = body.jenis
+    nakes.harga = body.harga
+    nakes.username = body.username
+    nakes.password = await bcrypt.hash(body.password, salt)
+    nakes.email = body.email
+    nakes.noTelp = phoneNumberFormat(body.noTelp)
+    if (typeof body.berbagiLokasi === 'boolean') nakes.berbagiLokasi = body.berbagiLokasi
     if (foto) nakes.foto = '/public/upload/foto/' + foto.filename
 
-    if (lokasi) nakes.lokasi = `POINT(${lokasi.lat} ${lokasi.lng})`
+    if (body.lokasi) nakes.lokasi = `POINT(${body.lokasi.lat} ${body.lokasi.lng})`
     else nakes.lokasi = 'POINT(0 0)'
 
     // Select user with noTelp OR email OR username from request body
     const nakesIsExist = await nakesRepo.find({
-      where: [{ noTelp: phoneNumberFormat(noTelp) }, { email }, { username }],
+      where: [
+        { noTelp: phoneNumberFormat(body.noTelp) },
+        { email: body.email },
+        { username: body.username },
+      ],
     })
     // If there a user,
     // push an object to existProperties (if property value === request body)
     if (nakesIsExist.length > 0) {
       nakesIsExist.forEach((pas) => {
-        pas.noTelp === phoneNumberFormat(noTelp) &&
+        pas.noTelp === phoneNumberFormat(body.noTelp) &&
           existProperties.push({
             property: 'noTelp',
             errors: ['nomor telepon sudah terdaftar'],
           })
-        pas.email === email &&
+        pas.email === body.email &&
           existProperties.push({
             property: 'email',
             errors: ['email sudah terdaftar'],
           })
-        pas.username === username &&
+        pas.username === body.username &&
           existProperties.push({
             property: 'username',
             errors: ['username sudah terdaftar'],
@@ -215,10 +249,14 @@ export const getManyNakes = async (req: Request, res: Response) => {
     } else {
       nakes.forEach((nakes) => {
         let jarakNilai = parseInt(getDistance(pointFormat(origin), nakes.lokasi) + '')
+
         let jarakTeks =
           jarakNilai < 1000
             ? '~' + jarakNilai.toFixed(0) + ' m'
             : '~' + (jarakNilai / 1000).toFixed(1) + ' km'
+
+        let biayaTranspor = calcBiayaTranspor(jarakNilai)
+
         dataNakes.push({
           ...nakes,
           password: undefined,
@@ -226,6 +264,7 @@ export const getManyNakes = async (req: Request, res: Response) => {
             nilai: jarakNilai,
             teks: jarakTeks,
           },
+          biayaTranspor,
         })
       })
     }
@@ -269,7 +308,8 @@ export const updateNakesProfile = async (req: Request, res: Response) => {
 
   const id = req.params.id
 
-  const { jenis, nama, harga, username, password, email, noTelp, berbagiLokasi, lokasi } = req.body
+  const body: Body = req.body
+  // const { jenis, nama, harga, username, password, email, noTelp, berbagiLokasi, lokasi } = req.body
 
   // If noTelp OR email OR username already exist
   // it will sent through response.constraints with the message
@@ -280,18 +320,23 @@ export const updateNakesProfile = async (req: Request, res: Response) => {
   try {
     if (!nakes) throw new Error('Nakes tidak ditemukan')
     if (req.user.id !== id) throw new Error('Akses tidak valid')
+    let jenisIsValid = false
+    for (let j in Jenis) {
+      if (body.jenis === j) jenisIsValid = true
+    }
+    if (!jenisIsValid) throw new Error('Jenis tidak valid')
 
     const salt = await bcrypt.genSalt(10)
 
-    if (nama) nakes.nama = nama
-    if (jenis) nakes.jenis = jenis
-    if (harga) nakes.harga = parseFloat(harga)
-    if (noTelp) nakes.noTelp = phoneNumberFormat(noTelp)
-    if (email) nakes.email = email
-    if (username) nakes.username = username
-    if (password) nakes.password = await bcrypt.hash(password, salt)
-    if (typeof berbagiLokasi === 'boolean') nakes.berbagiLokasi = berbagiLokasi
-    if (lokasi) nakes.lokasi = `POINT(${lokasi.lat} ${lokasi.lng})`
+    if (body.nama) nakes.nama = body.nama
+    if (body.jenis) nakes.jenis = body.jenis
+    if (body.harga) nakes.harga = body.harga
+    if (body.noTelp) nakes.noTelp = phoneNumberFormat(body.noTelp)
+    if (body.email) nakes.email = body.email
+    if (body.username) nakes.username = body.username
+    if (body.password) nakes.password = await bcrypt.hash(body.password, salt)
+    if (typeof body.berbagiLokasi === 'boolean') nakes.berbagiLokasi = body.berbagiLokasi
+    if (body.lokasi) nakes.lokasi = `POINT(${body.lokasi.lat} ${body.lokasi.lng})`
 
     // Select user with noTelp OR email OR username from request body
     const nakesIsExist = await nakesRepo.find({
@@ -303,17 +348,17 @@ export const updateNakesProfile = async (req: Request, res: Response) => {
       nakesIsExist
         .filter((pas) => pas.id !== id)
         .forEach((pas) => {
-          pas.noTelp === phoneNumberFormat(noTelp) &&
+          pas.noTelp === phoneNumberFormat(body.noTelp) &&
             existProperties.push({
               property: 'noTelp',
               errors: ['nomor telepon sudah terdaftar'],
             })
-          pas.email === email &&
+          pas.email === body.email &&
             existProperties.push({
               property: 'email',
               errors: ['email sudah terdaftar'],
             })
-          pas.username === username &&
+          pas.username === body.username &&
             existProperties.push({
               property: 'username',
               errors: ['username sudah terdaftar'],

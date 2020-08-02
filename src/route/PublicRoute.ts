@@ -5,7 +5,7 @@ const router = Router()
 router.get('/jenis-nakes', (req: Request, res: Response) => {
   res.json({
     success: true,
-    jenis: ['dokter', 'perawat', 'psikolog'],
+    jenis: ['dokter', 'nakes', 'psikolog'],
   })
 })
 

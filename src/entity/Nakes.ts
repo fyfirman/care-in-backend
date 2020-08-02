@@ -21,7 +21,6 @@ export class Nakes extends BaseEntity {
   jenis: string
 
   @Column({ type: 'decimal', precision: 11, scale: 2 })
-  @IsPositive({ message: 'harga harus bernilai positif' })
   @IsNotEmpty({ message: 'harga harus diisi' })
   harga: number
 
