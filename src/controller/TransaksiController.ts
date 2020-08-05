@@ -47,6 +47,7 @@ export const pesanNakes = async (req: Request, res: Response) => {
     transaksi.status = 'pending' //pending, berjalan, selesai
 
     await Transaksi.save(transaksi)
+    await Nakes.update(nakesId, { berbagiLokasi: false })
 
     responseLogger(req.method, 201, req.baseUrl + req.path)
     res.json({
@@ -120,6 +121,10 @@ export const updateOneTransaksi = async (req: Request, res: Response) => {
         berhasil: updateState.berhasil,
       },
     )
+
+    if (updateState.status === 'selesai') {
+      await Nakes.update(transaksi.nakesId, { berbagiLokasi: true })
+    }
 
     if (updateState.berhasil) {
       let isExist = true
@@ -245,7 +250,7 @@ export const getRiwayatTransaksi = async (req: Request, res: Response) => {
       success: true,
       message: 'Berhasil mengambil transaksi',
       transaksiBerjalan,
-      total: await RiwayatTransaksi.count(),
+      total: await RiwayatTransaksi.count({ where: { [whereId]: req.user.id } }),
       limit: parseInt(limit as string) || 0,
       page: parseInt(page as string) || 0,
       totalBelumSetor: user === 'nakes' ? parseFloat(totalBelumSetor.total) || 0 : undefined,

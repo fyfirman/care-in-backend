@@ -132,10 +132,11 @@ export const getOnePasien = async (req: Request, res: Response) => {
 
   try {
     const pasien = await pasienRepo.findOne(id)
-    pasien.password = undefined
 
     if (!pasien) throw new Error('User tidak ditemukan')
     if (req.user.id !== id) throw new Error('Akses tidak valid')
+
+    pasien.password = undefined
 
     responseLogger(req.method, 200, req.baseUrl + req.path)
     res.json({
@@ -170,7 +171,6 @@ export const updatePasienProfile = async (req: Request, res: Response) => {
     tinggiBadan,
     goldar,
     tempatLahir,
-    riwayatKesehatan,
   } = req.body
 
   // If noTelp OR email OR username already exist
@@ -182,14 +182,6 @@ export const updatePasienProfile = async (req: Request, res: Response) => {
   try {
     if (!pasien) throw new Error('User tidak ditemukan')
     if (req.user.id !== id) throw new Error('Akses tidak valid')
-
-    if (riwayatKesehatan && riwayatKesehatan.length > 0) {
-      riwayatKesehatan.forEach((rk) => {
-        const tanggal = new Date(rk.tanggal)
-        if (isNaN(tanggal.getTime())) throw new Error('tanggal riwayat kesehatan tidak valid')
-        if (!rk.namaPenyakit) throw new Error('nama penyakit riwayat kesehatan harus diisi')
-      })
-    }
 
     const salt = await bcrypt.genSalt(10)
 
@@ -239,24 +231,14 @@ export const updatePasienProfile = async (req: Request, res: Response) => {
 
     await pasienRepo.save(pasien)
 
-    if (riwayatKesehatan && riwayatKesehatan.length > 0)
-      riwayatKesehatan.forEach(async (rk) => {
-        const riwayat = new RiwayatKesehatan()
-
-        riwayat.pasienId = id
-        riwayat.tanggal = new Date(rk.tanggal)
-        riwayat.namaPenyakit = rk.namaPenyakit
-
-        await riwayat.save()
-      })
-
     responseLogger(req.method, 200, req.baseUrl + req.path)
     res.json({
       success: true,
       message: 'Berhasil memperbarui profil',
     })
   } catch (err) {
-    const constraints = validationDescriber(await validate(pasien))
+    let constraints = []
+    if (pasien) constraints = validationDescriber(await validate(pasien))
     responseLogger(req.method, 400, req.baseUrl + req.path, err.message)
     res.status(400).json({
       success: false,

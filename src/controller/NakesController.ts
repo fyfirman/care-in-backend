@@ -118,7 +118,7 @@ export const createNakes = async (req: Request, res: Response) => {
       message: !isChecking ? 'Berhasil membuat akun' : undefined,
     })
   } catch (err) {
-    const constraints = validationDescriber(await validate(nakes))
+    const constraints = nakes && validationDescriber(await validate(nakes))
     responseLogger(req.method, 400, req.baseUrl + req.path, err.message)
     res.status(400).json({
       success: false,
@@ -320,9 +320,11 @@ export const updateNakesProfile = async (req: Request, res: Response) => {
   try {
     if (!nakes) throw new Error('Nakes tidak ditemukan')
     if (req.user.id !== id) throw new Error('Akses tidak valid')
-    let jenisIsValid = false
-    for (let j in Jenis) {
-      if (body.jenis === j) jenisIsValid = true
+    let jenisIsValid = body.jenis ? false : true
+    if (body.jenis) {
+      for (let j in Jenis) {
+        if (body.jenis === j) jenisIsValid = true
+      }
     }
     if (!jenisIsValid) throw new Error('Jenis tidak valid')
 
@@ -336,7 +338,9 @@ export const updateNakesProfile = async (req: Request, res: Response) => {
     if (body.username) nakes.username = body.username
     if (body.password) nakes.password = await bcrypt.hash(body.password, salt)
     if (typeof body.berbagiLokasi === 'boolean') nakes.berbagiLokasi = body.berbagiLokasi
+
     if (body.lokasi) nakes.lokasi = `POINT(${body.lokasi.lat} ${body.lokasi.lng})`
+    else nakes.lokasi = `POINT(${nakes.lokasi['lat']} ${nakes.lokasi['lng']})`
 
     // Select user with noTelp OR email OR username from request body
     const nakesIsExist = await nakesRepo.find({
@@ -378,7 +382,8 @@ export const updateNakesProfile = async (req: Request, res: Response) => {
       message: 'Berhasil memperbarui profil',
     })
   } catch (err) {
-    const constraints = validationDescriber(await validate(nakes))
+    let constraints = []
+    if (nakes) constraints = validationDescriber(await validate(nakes))
 
     let statusCode = 500
     if (err.message === 'Data tidak valid') statusCode = 400
