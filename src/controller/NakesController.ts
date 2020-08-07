@@ -188,7 +188,7 @@ export const getManyNakes = async (req: Request, res: Response) => {
       where: filter,
       order: findOrder,
       take: !origin ? (limit as any) : 25,
-      skip: !origin ? limit && page && ((page as any) - 1) * (limit as any) : 25,
+      skip: !origin && limit && page ? ((page as any) - 1) * (limit as any) : 25,
     })
 
     if (!origin) {
