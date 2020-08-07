@@ -241,13 +241,18 @@ export const getManyNakes = async (req: Request, res: Response) => {
     if (jarakNakes.data.status === 'OK') {
       nakes.forEach((nakes, i) => {
         if (jarakNakes.data.rows[0].elements[i].distance) {
+          let jarakNilai = jarakNakes.data.rows[0].elements[i].distance.value
+          let jarakTeks = jarakNakes.data.rows[0].elements[i].distance.text
+          let biayaTranspor = calcBiayaTranspor(jarakNilai)
+
           dataNakes.push({
             ...nakes,
             password: undefined,
             jarak: {
-              nilai: jarakNakes.data.rows[0].elements[i].distance.value,
-              teks: jarakNakes.data.rows[0].elements[i].distance.text,
+              nilai: jarakNilai,
+              teks: jarakTeks,
             },
+            biayaTranspor,
           })
         }
       })
