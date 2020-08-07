@@ -70,6 +70,9 @@ export const createNakes = async (req: Request, res: Response) => {
     if (typeof body.berbagiLokasi === 'boolean') nakes.berbagiLokasi = body.berbagiLokasi
     if (foto) nakes.foto = '/public/upload/foto/' + foto.filename
 
+    if (body.lokasi.lat < -90 || body.lokasi.lat > 90) throw new Error('Lokasi tidak valid')
+    if (body.lokasi.lng < -180 || body.lokasi.lng > 180) throw new Error('Lokasi tidak valid')
+
     if (body.lokasi) nakes.lokasi = `POINT(${body.lokasi.lat} ${body.lokasi.lng})`
     else nakes.lokasi = 'POINT(0 0)'
 
@@ -184,8 +187,8 @@ export const getManyNakes = async (req: Request, res: Response) => {
     const nakes = await nakesRepo.find({
       where: filter,
       order: findOrder,
-      take: !origin && (limit as any),
-      skip: !origin && limit && page && ((page as any) - 1) * (limit as any),
+      take: !origin ? (limit as any) : 25,
+      skip: !origin ? limit && page && ((page as any) - 1) * (limit as any) : 25,
     })
 
     if (!origin) {
@@ -237,14 +240,16 @@ export const getManyNakes = async (req: Request, res: Response) => {
     const dataNakes = []
     if (jarakNakes.data.status === 'OK') {
       nakes.forEach((nakes, i) => {
-        dataNakes.push({
-          ...nakes,
-          password: undefined,
-          jarak: {
-            nilai: jarakNakes.data.rows[0].elements[i].distance.value,
-            teks: jarakNakes.data.rows[0].elements[i].distance.text,
-          },
-        })
+        if (jarakNakes.data.rows[0].elements[i].distance) {
+          dataNakes.push({
+            ...nakes,
+            password: undefined,
+            jarak: {
+              nilai: jarakNakes.data.rows[0].elements[i].distance.value,
+              teks: jarakNakes.data.rows[0].elements[i].distance.text,
+            },
+          })
+        }
       })
     } else {
       nakes.forEach((nakes) => {
@@ -292,7 +297,7 @@ export const getManyNakes = async (req: Request, res: Response) => {
     res.json({
       success: true,
       message: 'Berhasil mengambil daftar nakes',
-      total: await nakesRepo.count({ where: filter }),
+      total: !origin ? await nakesRepo.count({ where: filter }) : nakesResult.length,
       limit: parseInt(limit as string) || 0,
       page: parseInt(page as string) || 0,
       nakes: nakesResult,
@@ -338,6 +343,9 @@ export const updateNakesProfile = async (req: Request, res: Response) => {
     if (body.username) nakes.username = body.username
     if (body.password) nakes.password = await bcrypt.hash(body.password, salt)
     if (typeof body.berbagiLokasi === 'boolean') nakes.berbagiLokasi = body.berbagiLokasi
+
+    if (body.lokasi.lat < -90 || body.lokasi.lat > 90) throw new Error('Lokasi tidak valid')
+    if (body.lokasi.lng < -180 || body.lokasi.lng > 180) throw new Error('Lokasi tidak valid')
 
     if (body.lokasi) nakes.lokasi = `POINT(${body.lokasi.lat} ${body.lokasi.lng})`
     else nakes.lokasi = `POINT(${nakes.lokasi['lat']} ${nakes.lokasi['lng']})`
