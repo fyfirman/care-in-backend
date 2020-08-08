@@ -184,6 +184,11 @@ export const getManyNakes = async (req: Request, res: Response) => {
   if (findOrder['jarak']) delete findOrder['jarak']
 
   try {
+    if (!origin) {
+      if ((limit as any) < 0 || (page as any) < 1)
+        throw new Error('Paginasi error, nilai tidak valid')
+    }
+
     const nakes = await nakesRepo.find({
       where: filter,
       order: findOrder,

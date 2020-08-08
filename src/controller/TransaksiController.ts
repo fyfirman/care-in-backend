@@ -211,6 +211,9 @@ export const getRiwayatTransaksi = async (req: Request, res: Response) => {
   }
 
   try {
+    if ((limit as any) < 0 || (page as any) < 1)
+      throw new Error('Paginasi error, nilai tidak valid')
+
     const transaksiBerjalan = await Transaksi.findOne({
       where: {
         [whereId]: req.user.id,

@@ -48,6 +48,9 @@ export const getManyRiwayatKesehatan = async (req: Request, res: Response) => {
   const { limit, page } = req.query
 
   try {
+    if ((limit as any) < 0 || (page as any) < 1)
+      throw new Error('Paginasi error, nilai tidak valid')
+
     const riwayatKesehatan = await riwayatKesRepo.find({
       where: { pasienId },
       take: limit as any,
