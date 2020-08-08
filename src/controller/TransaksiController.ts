@@ -201,13 +201,33 @@ export const getRiwayatTransaksi = async (req: Request, res: Response) => {
 
   const whereId = user === 'nakes' ? 'nakesId' : 'pasienId'
 
+  type ResultRiwayat = {
+    transaksiBerjalan?: Object
+    riwayatTransaksi?: Object[]
+  }
+
+  const result: ResultRiwayat = {
+    riwayatTransaksi: [],
+  }
+
   try {
     const transaksiBerjalan = await Transaksi.findOne({
       where: {
         [whereId]: req.user.id,
         status: Not('selesai'),
       },
+      relations: ['nakes'],
     })
+
+    if (transaksiBerjalan) {
+      result.transaksiBerjalan = {
+        ...transaksiBerjalan,
+        nakes: {
+          nama: transaksiBerjalan.nakes.nama,
+          foto: transaksiBerjalan.nakes.foto,
+        },
+      }
+    }
 
     const riwayatTransaksi = await RiwayatTransaksi.find({
       where: { [whereId]: req.user.id },
@@ -216,7 +236,20 @@ export const getRiwayatTransaksi = async (req: Request, res: Response) => {
       order: {
         waktuDibuat: 'DESC',
       },
+      relations: ['nakes'],
     })
+
+    if (riwayatTransaksi && riwayatTransaksi[0]) {
+      riwayatTransaksi.forEach((rk) => {
+        result.riwayatTransaksi.push({
+          ...rk,
+          nakes: {
+            nama: rk.nakes.nama,
+            foto: rk.nakes.foto,
+          },
+        })
+      })
+    }
 
     let totalBelumSetor
     let totalTelahSetor
@@ -249,7 +282,7 @@ export const getRiwayatTransaksi = async (req: Request, res: Response) => {
     res.json({
       success: true,
       message: 'Berhasil mengambil transaksi',
-      transaksiBerjalan,
+      transaksiBerjalan: result.transaksiBerjalan,
       total: await RiwayatTransaksi.count({ where: { [whereId]: req.user.id } }),
       limit: parseInt(limit as string) || 0,
       page: parseInt(page as string) || 0,
@@ -261,7 +294,7 @@ export const getRiwayatTransaksi = async (req: Request, res: Response) => {
             (parseFloat(totalBelumSetor.total) || 0) -
             (parseFloat(totalTelahSetor.total) || 0)
           : undefined,
-      riwayatTransaksi,
+      riwayatTransaksi: result.riwayatTransaksi,
     })
   } catch (err) {
     responseLogger(req.method, 500, req.baseUrl + req.path)
