@@ -170,6 +170,14 @@ export const updateOneTransaksi = async (req: Request, res: Response) => {
 
         await RiwayatKesehatan.save(riwayatKesehatan)
       }
+    } else {
+      const riwayat = await RiwayatTransaksi.findOne({
+        where: { transaksiId },
+      })
+
+      if (riwayat) {
+        await RiwayatTransaksi.delete({ transaksiId })
+      }
     }
 
     responseLogger(req.method, 200, req.baseUrl + req.path)
@@ -219,7 +227,7 @@ export const getRiwayatTransaksi = async (req: Request, res: Response) => {
         [whereId]: req.user.id,
         status: Not('selesai'),
       },
-      relations: ['nakes'],
+      relations: ['nakes', 'pasien'],
     })
 
     if (transaksiBerjalan) {
@@ -228,6 +236,10 @@ export const getRiwayatTransaksi = async (req: Request, res: Response) => {
         nakes: {
           nama: transaksiBerjalan.nakes.nama,
           foto: transaksiBerjalan.nakes.foto,
+        },
+        pasien: {
+          nama: transaksiBerjalan.pasien.nama,
+          foto: transaksiBerjalan.pasien.foto,
         },
       }
     }
@@ -239,16 +251,20 @@ export const getRiwayatTransaksi = async (req: Request, res: Response) => {
       order: {
         waktuDibuat: 'DESC',
       },
-      relations: ['nakes'],
+      relations: ['nakes', 'pasien'],
     })
 
     if (riwayatTransaksi && riwayatTransaksi[0]) {
-      riwayatTransaksi.forEach((rk) => {
+      riwayatTransaksi.forEach((rtr) => {
         result.riwayatTransaksi.push({
-          ...rk,
+          ...rtr,
           nakes: {
-            nama: rk.nakes.nama,
-            foto: rk.nakes.foto,
+            nama: rtr.nakes.nama,
+            foto: rtr.nakes.foto,
+          },
+          pasien: {
+            nama: rtr.pasien.nama,
+            foto: rtr.pasien.foto,
           },
         })
       })
