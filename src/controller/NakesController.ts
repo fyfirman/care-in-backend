@@ -352,7 +352,11 @@ export const updateNakesProfile = async (req: Request, res: Response) => {
     if (body.noTelp) nakes.noTelp = phoneNumberFormat(body.noTelp)
     if (body.email) nakes.email = body.email
     if (body.username) nakes.username = body.username
-    if (body.password) nakes.password = await bcrypt.hash(body.password, salt)
+    if (body.password) {
+      if (body.password.length < 8)
+        throw new Error('Password harus lebih dari sama dengan 8 karakter')
+      nakes.password = await bcrypt.hash(body.password, salt)
+    }
     if (typeof body.berbagiLokasi === 'boolean') nakes.berbagiLokasi = body.berbagiLokasi
 
     if (body.lokasi) {
