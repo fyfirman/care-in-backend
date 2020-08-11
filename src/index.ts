@@ -60,7 +60,7 @@ createConnection()
 
       // user sends the chat
       socket.on('sendChat', (data) => {
-        socket.to(data.transaksiId).emit('receiveChat', data)
+        io.to(data.transaksiId).emit('receiveChat', data)
       })
     })
   })
