@@ -26,7 +26,7 @@ export const pesanNakes = async (req: Request, res: Response) => {
   try {
     const nakes = await Nakes.findOne(nakesId)
     if (!nakes) throw new Error('Nakes tidak ditemukan')
-    if (!jarak || !pasienLokasi) throw new Error('Data tidak lengkap')
+    if ((jarak && jarak < 0) || !pasienLokasi) throw new Error('Data tidak lengkap')
 
     const transaksiBerjalan = await Transaksi.findOne({
       where: {

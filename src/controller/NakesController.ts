@@ -205,7 +205,12 @@ export const getManyNakes = async (req: Request, res: Response) => {
         total: await nakesRepo.count({ where: filter }),
         limit: parseInt(limit as string) || 0,
         page: parseInt(page as string) || 0,
-        nakes: nakes,
+        nakes: nakes.map((nk) => {
+          return {
+            ...nk,
+            password: undefined,
+          }
+        }),
       })
     }
 
