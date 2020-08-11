@@ -354,11 +354,12 @@ export const updateNakesProfile = async (req: Request, res: Response) => {
     if (body.password) nakes.password = await bcrypt.hash(body.password, salt)
     if (typeof body.berbagiLokasi === 'boolean') nakes.berbagiLokasi = body.berbagiLokasi
 
-    if (body.lokasi.lat < -90 || body.lokasi.lat > 90) throw new Error('Lokasi tidak valid')
-    if (body.lokasi.lng < -180 || body.lokasi.lng > 180) throw new Error('Lokasi tidak valid')
+    if (body.lokasi) {
+      if (body.lokasi.lat < -90 || body.lokasi.lat > 90) throw new Error('Lokasi tidak valid')
+      if (body.lokasi.lng < -180 || body.lokasi.lng > 180) throw new Error('Lokasi tidak valid')
 
-    if (body.lokasi) nakes.lokasi = `POINT(${body.lokasi.lat} ${body.lokasi.lng})`
-    else nakes.lokasi = `POINT(${nakes.lokasi['lat']} ${nakes.lokasi['lng']})`
+      nakes.lokasi = `POINT(${body.lokasi.lat} ${body.lokasi.lng})`
+    } else nakes.lokasi = `POINT(${nakes.lokasi['lat']} ${nakes.lokasi['lng']})`
 
     // Select user with noTelp OR email OR username from request body
     const nakesIsExist = await nakesRepo.find({
