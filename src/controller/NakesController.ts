@@ -138,9 +138,10 @@ export const getOneNakes = async (req: Request, res: Response) => {
 
   try {
     const nakes = await nakesRepo.findOne(id)
-    nakes.password = undefined
 
     if (!nakes) throw new Error('Nakes tidak ditemukan')
+
+    nakes.password = undefined
 
     responseLogger(req.method, 200, req.baseUrl + req.path)
     res.json({
