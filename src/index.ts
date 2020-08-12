@@ -50,19 +50,28 @@ createConnection()
     })
 
     // socket io connection
-    const io = socketio(server)
-    io.on('connection', (socket) => {
-      // user joins the channel
-      // by emitting 'joinRoom'
-      socket.on('joinRoom', (data) => {
-        socket.join(data.transaksiId)
-      })
-
-      // user sends the chat
-      socket.on('sendChat', (data) => {
-        io.to(data.transaksiId).emit('receiveChat', data)
-      })
-    })
+    const io = socketio(server);
+    const NEW_CHAT_MESSAGE_EVENT = "newChatMessage";
+    
+    io.on("connection", (socket) => {
+      console.log(`Client ${socket.id} connected`);
+    
+      // Join a conversation
+      const { roomId } = socket.handshake.query;
+      socket.join(roomId);
+    
+      // Listen for new messages
+      socket.on(NEW_CHAT_MESSAGE_EVENT, (data) => {
+        io.in(roomId).emit(NEW_CHAT_MESSAGE_EVENT, data);
+      });
+    
+      // Leave the room if the user closes the socket
+      socket.on("disconnect", () => {
+        console.log(`Client ${socket.id} diconnected`);
+        socket.leave(roomId);
+      });
+    });
+    
   })
   .catch((err) => {
     console.log(err)
