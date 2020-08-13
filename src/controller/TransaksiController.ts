@@ -395,17 +395,12 @@ export const transaksiChatAmbil = async (req: Request, res: Response) => {
       },
     })
 
-    if (!chat[0]) throw new Error('Chat kosong')
-
     const pengirimIds = await getRepository(Chat)
       .createQueryBuilder('chat')
       .select('chat.pengirimId', 'id')
       .distinct(true)
       .where('chat.transaksiId = :transaksiId', { transaksiId })
       .getRawMany()
-
-    if (pengirimIds[0].id !== req.user.id && pengirimIds[1].id !== req.user.id)
-      throw new Error('Akses tidak valid')
 
     responseLogger(req.method, 200, req.baseUrl + req.path)
     res.json({
@@ -415,9 +410,6 @@ export const transaksiChatAmbil = async (req: Request, res: Response) => {
     })
   } catch (err) {
     let statusCode = 500
-
-    if (err.message === 'Chat kosong') statusCode = 200
-    if (err.message === 'Akses tidak valid') statusCode = 403
 
     responseLogger(req.method, statusCode, req.baseUrl + req.path, err.message)
     res.status(statusCode).json({
