@@ -386,6 +386,10 @@ export const transaksiChatAmbil = async (req: Request, res: Response) => {
   const transaksiId = req.params.transaksiId
 
   try {
+    const transaksi = await Transaksi.findOne(transaksiId)
+
+    if (!transaksi) throw new Error('Transaksi tidak ditemukan')
+
     const chat = await Chat.find({
       where: {
         transaksiId,
@@ -395,12 +399,9 @@ export const transaksiChatAmbil = async (req: Request, res: Response) => {
       },
     })
 
-    const pengirimIds = await getRepository(Chat)
-      .createQueryBuilder('chat')
-      .select('chat.pengirimId', 'id')
-      .distinct(true)
-      .where('chat.transaksiId = :transaksiId', { transaksiId })
-      .getRawMany()
+    if (req.user.id !== transaksi.nakesId && req.user.id !== transaksi.pasienId) {
+      throw new Error('Akses tidak valid')
+    }
 
     responseLogger(req.method, 200, req.baseUrl + req.path)
     res.json({
@@ -410,6 +411,9 @@ export const transaksiChatAmbil = async (req: Request, res: Response) => {
     })
   } catch (err) {
     let statusCode = 500
+
+    if (err.message === 'Akses tidak valid') statusCode = 403
+    if (err.message === 'Transaksi tidak ditemukan') statusCode = 404
 
     responseLogger(req.method, statusCode, req.baseUrl + req.path, err.message)
     res.status(statusCode).json({
