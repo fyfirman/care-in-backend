@@ -126,7 +126,7 @@ export const updateOneTransaksi = async (req: Request, res: Response) => {
       await Nakes.update(transaksi.nakesId, { berbagiLokasi: true })
     }
 
-    if (updateState.berhasil) {
+    if (updateState.status === 'selesai') {
       let isExist = true
       let riwayatTransaksi = await RiwayatTransaksi.findOne({
         where: {
@@ -158,6 +158,7 @@ export const updateOneTransaksi = async (req: Request, res: Response) => {
       riwayatTransaksi.sakit = sakit || false
       riwayatTransaksi.namaPenyakit = sakit ? namaPenyakit || '' : null
       riwayatTransaksi.catatan = catatan
+      riwayatTransaksi.berhasil = updateState.berhasil
 
       await RiwayatTransaksi.save(riwayatTransaksi)
 
@@ -205,7 +206,7 @@ export const updateOneTransaksi = async (req: Request, res: Response) => {
 }
 
 export const getRiwayatTransaksi = async (req: Request, res: Response) => {
-  const { user, limit, page } = req.query
+  let { user, limit, page, berhasil } = req.query
 
   const whereId = user === 'nakes' ? 'nakesId' : 'pasienId'
 
@@ -244,8 +245,23 @@ export const getRiwayatTransaksi = async (req: Request, res: Response) => {
       }
     }
 
+    type Filter = {
+      nakesId?: string
+      pasienId?: string
+      berhasil?: boolean
+    }
+
+    const riwayatTransaksiFilter: Filter = {
+      [whereId]: req.user.id,
+    }
+
+    if (berhasil === 'true') riwayatTransaksiFilter.berhasil = true
+    if (berhasil === 'false') riwayatTransaksiFilter.berhasil = false
+
     const riwayatTransaksi = await RiwayatTransaksi.find({
-      where: { [whereId]: req.user.id },
+      where: {
+        ...riwayatTransaksiFilter,
+      },
       take: limit as any,
       skip: limit && page && ((page as any) - 1) * (limit as any),
       order: {
@@ -280,6 +296,7 @@ export const getRiwayatTransaksi = async (req: Request, res: Response) => {
         .select('SUM(rtr.biayaAdmin)', 'total')
         .where('rtr.nakesId = :nakesId', { nakesId: req.user.id })
         .andWhere('rtr.telahSetor = false')
+        .andWhere('rtr.berhasil = true')
         .getRawOne()
 
       totalTelahSetor = await getRepository(RiwayatTransaksi)
@@ -287,6 +304,7 @@ export const getRiwayatTransaksi = async (req: Request, res: Response) => {
         .select('SUM(rtr.biayaAdmin)', 'total')
         .where('rtr.nakesId = :nakesId', { nakesId: req.user.id })
         .andWhere('rtr.telahSetor = true')
+        .andWhere('rtr.berhasil = true')
         .getRawOne()
 
       totalJasaTranspor = await getRepository(RiwayatTransaksi)
@@ -294,6 +312,7 @@ export const getRiwayatTransaksi = async (req: Request, res: Response) => {
         .select('SUM(rtr.biayaTranspor)', 'transpor')
         .addSelect('SUM(rtr.biayaJasa)', 'jasa')
         .where('rtr.nakesId = :nakesId', { nakesId: req.user.id })
+        .andWhere('rtr.berhasil = true')
         .getRawOne()
     }
 
@@ -302,7 +321,7 @@ export const getRiwayatTransaksi = async (req: Request, res: Response) => {
       success: true,
       message: 'Berhasil mengambil transaksi',
       transaksiBerjalan: result.transaksiBerjalan,
-      total: await RiwayatTransaksi.count({ where: { [whereId]: req.user.id } }),
+      total: await RiwayatTransaksi.count({ where: { ...riwayatTransaksiFilter } }),
       limit: parseInt(limit as string) || 0,
       page: parseInt(page as string) || 0,
       totalBelumSetor: user === 'nakes' ? parseFloat(totalBelumSetor.total) || 0 : undefined,

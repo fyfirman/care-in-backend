@@ -11,7 +11,7 @@ import {
 import { Transaksi } from './Transaksi'
 import { Pasien } from './Pasien'
 import { Nakes } from './Nakes'
-import { IsPositive, IsNotEmpty } from 'class-validator'
+import { IsNotEmpty } from 'class-validator'
 
 @Entity()
 export class RiwayatTransaksi extends BaseEntity {
@@ -70,6 +70,9 @@ export class RiwayatTransaksi extends BaseEntity {
 
   @Column({ nullable: true })
   catatan: string
+
+  @Column({ default: false })
+  berhasil: boolean
 
   @AfterLoad() _convertNumerics() {
     this.biayaJasa = parseFloat(this.biayaJasa as any)
