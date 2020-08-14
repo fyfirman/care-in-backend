@@ -7,6 +7,7 @@ import { join } from 'path'
 import * as http from 'http'
 import * as socketio from 'socket.io'
 import * as cors from 'cors'
+import * as admin from 'firebase-admin'
 
 // Importing routes
 import PublicRoute from './route/PublicRoute'
@@ -15,6 +16,7 @@ import AuthRoute from './route/AuthRoute'
 import RiwayatKesehatanRoute from './route/RiwayatKesehatanRoute'
 import NakesRoute from './route/NakesRoute'
 import TransaksiRoute from './route/TransaksiRoute'
+import NotifikasiRoute from './route/NotifikasiRoute'
 
 // Load .env file
 dotenv.config({ path: '.env' })
@@ -26,6 +28,12 @@ createConnection()
     const PORT = process.env.PORT || 5000
 
     const app: Application = express()
+
+    // initiaalize firebase-admin
+    admin.initializeApp({
+      credential: admin.credential.cert(require("../serviceAccountKey.json")),
+      databaseURL: "https://carein-284214.firebaseio.com"
+    })
 
     // Applying middlewares
     app.use(express.json())
@@ -42,6 +50,7 @@ createConnection()
     app.use('/api/v1/riwayat-kesehatan', RiwayatKesehatanRoute)
     app.use('/api/v1/nakes', NakesRoute)
     app.use('/api/v1/transaksi', TransaksiRoute)
+    app.use('/api/v1/notifikasi', NotifikasiRoute)
 
     // Run express server
     const server = http.createServer(app)
@@ -52,26 +61,26 @@ createConnection()
     // socket io connection
     const io = socketio(server);
     const NEW_CHAT_MESSAGE_EVENT = "newChatMessage";
-    
+
     io.on("connection", (socket) => {
       console.log(`Client ${socket.id} connected`);
-    
+
       // Join a conversation
       const { roomId } = socket.handshake.query;
       socket.join(roomId);
-    
+
       // Listen for new messages
       socket.on(NEW_CHAT_MESSAGE_EVENT, (data) => {
         io.in(roomId).emit(NEW_CHAT_MESSAGE_EVENT, data);
       });
-    
+
       // Leave the room if the user closes the socket
       socket.on("disconnect", () => {
         console.log(`Client ${socket.id} diconnected`);
         socket.leave(roomId);
       });
     });
-    
+
   })
   .catch((err) => {
     console.log(err)
