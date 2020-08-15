@@ -8,7 +8,7 @@ export const createNotifikasi = async (req: Request, res: Response) => {
       throw new Error('Data tidak boleh kosong')
 
     const payload = {
-      data: req.body.data,
+      data: req.body.data ? req.body.data : {},
       notification: {
         title: req.body.title,
         body: req.body.body
