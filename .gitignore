@@ -7,3 +7,4 @@ temp/
 yarn-error.log
 public/upload/
 response.log
+.env
